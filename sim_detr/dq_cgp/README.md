@@ -8,6 +8,7 @@ The published checkpoint is selected at epoch 103 using validation
 the Git LFS object and verify it:
 
 ```bash
+git lfs install --local
 git lfs pull
 sha256sum checkpoints/model_best.ckpt
 # cb0df35b25397e34b8da27e0dd9a266d4fca00c0584cfbd45b5be8639ebc3e19

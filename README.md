@@ -31,6 +31,7 @@ The complete checkpoint is stored as one Git LFS object at
 downloaded file:
 
 ```bash
+git lfs install --local
 git lfs pull
 sha256sum checkpoints/model_best.ckpt
 # cb0df35b25397e34b8da27e0dd9a266d4fca00c0584cfbd45b5be8639ebc3e19
