@@ -3,12 +3,12 @@
 ## Released V3 (D1) checkpoint and results
 
 The published checkpoint is selected at epoch 103 using validation
-`MR-full-mAP`. Download its matching `opt.json` and both checkpoint parts from
+`MR-full-mAP`. Download its matching `opt.json` and all checkpoint parts from
 the [GitHub release](https://github.com/chinagalaxy2002/DQ-GCP-SD/releases/tag/v3-d1-qvhighlights),
 then reconstruct the original file:
 
 ```bash
-cat model_best.ckpt.part-00 model_best.ckpt.part-01 > model_best.ckpt
+cat model_best.ckpt.part-* > model_best.ckpt
 sha256sum model_best.ckpt
 # cb0df35b25397e34b8da27e0dd9a266d4fca00c0584cfbd45b5be8639ebc3e19
 ```
