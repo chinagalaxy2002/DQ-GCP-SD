@@ -26,13 +26,13 @@ coefficient `0.01`, 16 bases, and prompt length 6. Test metrics are computed
 only after validation-based checkpoint selection using the local
 `data/highlight_test_with_gt.jsonl` annotations.
 
-The checkpoint is uploaded as lossless Release parts because the local upload
-path rejects the original 155 MB single file. Reconstruct and verify it after
-downloading all parts:
+The complete checkpoint is stored as one Git LFS object at
+`checkpoints/model_best.ckpt`. Clone it together with the source and verify the
+downloaded file:
 
 ```bash
-cat model_best.ckpt.part-* > model_best.ckpt
-sha256sum model_best.ckpt
+git lfs pull
+sha256sum checkpoints/model_best.ckpt
 # cb0df35b25397e34b8da27e0dd9a266d4fca00c0584cfbd45b5be8639ebc3e19
 ```
 

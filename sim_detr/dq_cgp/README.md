@@ -3,13 +3,13 @@
 ## Released V3 (D1) checkpoint and results
 
 The published checkpoint is selected at epoch 103 using validation
-`MR-full-mAP`. Download its matching `opt.json` and all checkpoint parts from
-the [GitHub release](https://github.com/chinagalaxy2002/DQ-GCP-SD/releases/tag/v3-d1-qvhighlights),
-then reconstruct the original file:
+`MR-full-mAP`. The complete file and its matching `opt.json` are stored at
+`checkpoints/model_best.ckpt` and `checkpoints/opt.json`. After cloning, fetch
+the Git LFS object and verify it:
 
 ```bash
-cat model_best.ckpt.part-* > model_best.ckpt
-sha256sum model_best.ckpt
+git lfs pull
+sha256sum checkpoints/model_best.ckpt
 # cb0df35b25397e34b8da27e0dd9a266d4fca00c0584cfbd45b5be8639ebc3e19
 ```
 
