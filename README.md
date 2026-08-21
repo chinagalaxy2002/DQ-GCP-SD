@@ -1,10 +1,47 @@
 # [ICCV2025] Sim-DETR: Unlock DETR for Temporal Sentence Grounding
 
-> **DQ-CGP extension.** The complete implementation and exact reproduction
-> commands for the DQ-CGP V3 (D1) result are in
-> [`sim_detr/dq_cgp/README.md`](sim_detr/dq_cgp/README.md).  The matching
-> trained checkpoint is provided as a GitHub Release asset; download it into
-> the run directory together with the release's `opt.json` before inference.
+## DQ-CGP V3 (D1) extension
+
+This repository includes the complete DQ-CGP implementation for
+QVHighlights. DQ-CGP performs candidate-specific temporal binding, basis
+routing, and feature refinement for each native DETR query. The selected V3
+configuration inserts DQ-CGP once between decoder layers D1 and D2 and is
+trained from scratch under the same protocol as the Sim-DETR baseline.
+
+- Complete training and evaluation guide: [sim_detr/dq_cgp/README.md](sim_detr/dq_cgp/README.md)
+- Released checkpoint: [DQ-CGP V3 (D1) release](https://github.com/chinagalaxy2002/DQ-GCP-SD/releases/tag/v3-d1-qvhighlights)
+- Selection metric: validation `MR-full-mAP`, without using test GT for model selection
+
+### QVHighlights results
+
+| Method | test R1@0.5 | test R1@0.7 | test mAP@0.5 | test mAP@0.75 | test mAP Avg. | val R1@0.5 | val R1@0.7 | val mAP@0.5 | val mAP@0.75 | val mAP Avg. |
+| ------ | ----------: | ----------: | -----------: | ------------: | ------------: | ---------: | ---------: | ----------: | -----------: | -----------: |
+| Sim-DETR baseline | 66.93 | **51.56** | 67.75 | 48.89 | 47.60 | **68.32** | 53.81 | **69.03** | 50.77 | 49.14 |
+| **DQ-CGP V3 (D1)** | **67.96** | 51.36 | **68.94** | **49.01** | **48.06** | 67.81 | **54.06** | 68.81 | **51.01** | **49.66** |
+| Improvement | +1.03 | -0.20 | +1.19 | +0.12 | **+0.46** | -0.51 | +0.25 | -0.22 | +0.24 | **+0.52** |
+
+The released V3 checkpoint was selected at epoch 103. Its main parameters are
+seed 2017, `beta=0.05`, binding-loss coefficient `0.20`, routing-loss
+coefficient `0.01`, 16 bases, and prompt length 6. Test metrics are computed
+only after validation-based checkpoint selection using the local
+`data/highlight_test_with_gt.jsonl` annotations.
+
+### Exploratory DQ-CGP variants on test
+
+| Method | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | mAP Avg. |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| DQ-CGP V3 (D1) | **67.96** | 51.36 | **68.94** | **49.01** | **48.06** |
+| Grid: beta=0.100, bind=0.40, route=0.005 | 66.80 | 51.23 | 67.48 | 48.96 | 47.88 |
+| Grid: beta=0.100, bind=0.10, route=0.020 | 68.35 | **52.40** | 68.75 | 48.06 | 47.82 |
+| Grid: beta=0.025, bind=0.10, route=0.005 | 66.93 | 51.62 | 67.89 | 48.31 | 47.68 |
+| Grid: beta=0.100, bind=0.40, route=0.020 | 67.90 | 50.97 | 68.17 | 48.25 | 47.66 |
+| Grid: beta=0.025, bind=0.40, route=0.005 | 67.25 | 52.01 | 67.90 | 48.20 | 47.63 |
+| Grid: beta=0.025, bind=0.40, route=0.020 | 67.51 | 51.23 | 67.80 | 47.76 | 47.49 |
+| Grid: beta=0.100, bind=0.10, route=0.005 | 66.93 | 49.94 | 67.59 | 47.90 | 47.40 |
+| Grid: beta=0.025, bind=0.10, route=0.020 | 66.80 | 50.52 | 67.55 | 46.89 | 46.73 |
+| DQ-CGP tied dual | 66.15 | 50.26 | 67.21 | 47.67 | 46.88 |
+| DQ-CGP dual independent | 66.21 | 51.36 | 67.21 | 47.76 | 46.85 |
+| DQ-CGP tied all | 66.21 | 49.81 | 67.30 | 47.10 | 46.80 |
 
 by Jiajin Tang*, Zhengxuan Wei*, Yuchen Zhu, Cheng Shi, Guanbin Li, Liang Lin, Sibei Yang†
 

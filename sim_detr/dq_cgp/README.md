@@ -1,5 +1,22 @@
 # Sim-DETR + DQ-CGP: training and inference
 
+## Released V3 (D1) checkpoint and results
+
+The published checkpoint is selected at epoch 103 using validation
+`MR-full-mAP`. Download `model_best.ckpt` and its matching `opt.json` from the
+[GitHub release](https://github.com/chinagalaxy2002/DQ-GCP-SD/releases/tag/v3-d1-qvhighlights).
+
+| Method | test R1@0.5 | test R1@0.7 | test mAP@0.5 | test mAP@0.75 | test mAP Avg. | val R1@0.5 | val R1@0.7 | val mAP@0.5 | val mAP@0.75 | val mAP Avg. |
+| ------ | ----------: | ----------: | -----------: | ------------: | ------------: | ---------: | ---------: | ----------: | -----------: | -----------: |
+| Sim-DETR baseline | 66.93 | **51.56** | 67.75 | 48.89 | 47.60 | **68.32** | 53.81 | **69.03** | 50.77 | 49.14 |
+| **DQ-CGP V3 (D1)** | **67.96** | 51.36 | **68.94** | **49.01** | **48.06** | 67.81 | **54.06** | 68.81 | **51.01** | **49.66** |
+| Improvement | +1.03 | -0.20 | +1.19 | +0.12 | **+0.46** | -0.51 | +0.25 | -0.22 | +0.24 | **+0.52** |
+
+The baseline and DQ-CGP use the same QVHighlights splits, offline features,
+seed, optimizer, and 200-epoch training budget. Validation is used for
+checkpoint selection; `highlight_test_with_gt.jsonl` is evaluated only after
+selection.
+
 Run all commands from the repository root. The scripts resolve the repository
 and data paths automatically. Use `PYTHON_BIN` when the desired Python is not
 the active environment:
