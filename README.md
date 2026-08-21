@@ -26,6 +26,16 @@ coefficient `0.01`, 16 bases, and prompt length 6. Test metrics are computed
 only after validation-based checkpoint selection using the local
 `data/highlight_test_with_gt.jsonl` annotations.
 
+The checkpoint is uploaded as two lossless Release assets because the local
+upload path rejects the original 155 MB single file. Reconstruct and verify it
+after downloading both parts:
+
+```bash
+cat model_best.ckpt.part-00 model_best.ckpt.part-01 > model_best.ckpt
+sha256sum model_best.ckpt
+# cb0df35b25397e34b8da27e0dd9a266d4fca00c0584cfbd45b5be8639ebc3e19
+```
+
 ### Exploratory DQ-CGP variants on test
 
 | Method | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | mAP Avg. |
@@ -127,4 +137,3 @@ If you find this repository useful, please cite our work:
 ## License
 
 The annotation files and parts of the implementation are borrowed from Moment-DETR and TR-DETR. Consequently, our code is also released under the [MIT License](https://opensource.org/licenses/MIT).
-
