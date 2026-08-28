@@ -6,15 +6,26 @@ cd "$ROOT"
 
 TRAIN_ROOT="${CAUSAL_RUN_ROOT:-$ROOT/causal_occurrence_lab/outputs/causal_training_parallel}"
 EVAL_ROOT="${CAUSAL_EVAL_ROOT:-$ROOT/causal_occurrence_lab/outputs/evaluated_variants_parallel}"
+SESSION_PREFIX="${CAUSAL_SESSION_PREFIX:-dqgcp}"
 VARIANTS=(full_repro_seed2017 no_bind_seed2017 supervision_only_seed2017 union_bind_seed2017)
-SESSIONS=(dqgcp_full dqgcp_no_bind dqgcp_supervision dqgcp_union)
+SESSIONS=(
+  "${SESSION_PREFIX}_full"
+  "${SESSION_PREFIX}_no_bind"
+  "${SESSION_PREFIX}_supervision"
+  "${SESSION_PREFIX}_union"
+)
 
 echo "Waiting for fixed-seed-2017 first-round jobs under $TRAIN_ROOT"
 while true; do
   all_finished=true
-  for variant in "${VARIANTS[@]}"; do
+  for index in "${!VARIANTS[@]}"; do
+    variant="${VARIANTS[$index]}"
     log="$TRAIN_ROOT/$variant/causal_train.log"
     if [[ ! -f "$log" ]] || ! rg -q "Finished variant" "$log"; then
+      if ! tmux has-session -t "${SESSIONS[$index]}" 2>/dev/null; then
+        echo "Training session ${SESSIONS[$index]} exited before completion" >&2
+        exit 1
+      fi
       all_finished=false
       break
     fi
