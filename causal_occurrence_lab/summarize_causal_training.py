@@ -27,8 +27,18 @@ def _read_json(path: Path):
         return json.load(handle)
 
 
-def summarize(root: str | Path) -> dict:
+def summarize(root: str | Path, train_root: str | Path | None = None) -> dict:
     root = Path(root)
+    if train_root is None:
+        candidates = (
+            root.parent / "causal_training",
+            root.parent / "causal_training_parallel",
+        )
+        train_root = next(
+            (candidate for candidate in candidates if candidate.is_dir()),
+            candidates[0],
+        )
+    train_root = Path(train_root)
     result = {
         "root": str(root.resolve()),
         "seed_policy": "single fixed seed 2017; no multi-seed runs",
@@ -54,7 +64,7 @@ def summarize(root: str | Path) -> dict:
             "multi_d4_binding": multi,
             "clean_multi_d4_binding": clean,
         }
-        config_path = root.parent / "causal_training" / variant / "variant.json"
+        config_path = train_root / variant / "variant.json"
         if config_path.is_file():
             result["variants"][variant]["variant_config"] = _read_json(config_path)
     return result
@@ -64,8 +74,13 @@ def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", required=True, help="evaluated_variants root")
     parser.add_argument("--output", required=True)
+    parser.add_argument(
+        "--train-root",
+        default=None,
+        help="training root containing variant.json files (auto-detected if omitted)",
+    )
     args = parser.parse_args(argv)
-    result = summarize(args.root)
+    result = summarize(args.root, train_root=args.train_root)
     save_json(args.output, result)
     print(json.dumps(result, indent=2, ensure_ascii=False))
 

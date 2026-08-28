@@ -63,6 +63,22 @@ with `--query_cgp_binding_loss_coef`, `--query_cgp_route_loss_coef`,
 `--query_cgp_inject`/`--no-query_cgp_inject`, and
 `--query_cgp_binding_target`.
 
+When two GPUs are available, the four first-round jobs can be launched
+concurrently (two jobs per GPU):
+
+```bash
+bash causal_occurrence_lab/scripts/run_parallel_first_round.sh
+```
+
+The parallel launcher writes to `outputs/causal_training_parallel/` by
+default.  Use `tmux ls` and the per-variant `*_tmux.log` files to monitor it.
+After all four checkpoints finish, evaluate them with:
+
+```bash
+CAUSAL_RUN_ROOT="$PWD/causal_occurrence_lab/outputs/causal_training_parallel" \
+bash causal_occurrence_lab/scripts/run_eval_variants.sh
+```
+
 ## Checkpoint conventions
 
 The repository currently contains several DQ-CGP result families.  The
@@ -92,8 +108,9 @@ All causal loss controls use the production routing objective
 ## Current execution status
 
 The full Phase-1 analysis has been run on the 1,542-query test split.  The
-causal training variants have only received a short four-batch seed-2017
-forward/backward smoke test in this delivery; no formal 200-epoch causal
-training claim is recorded here.  Multi-seed training is intentionally not
-run.  Generated checkpoints, logs, and JSON outputs are ignored by the local
-`.gitignore`; use the scripts to regenerate them in the working tree.
+formal first-round jobs use only seed 2017 and are launched concurrently by
+`run_parallel_first_round.sh`; their checkpoints and logs are kept under
+`outputs/causal_training_parallel/`.  Multi-seed training is intentionally
+not run.  Generated checkpoints, logs, and JSON outputs are ignored by the
+local `.gitignore`; compact publishable summaries are copied into
+`results/` after evaluation.

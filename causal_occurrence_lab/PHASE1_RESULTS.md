@@ -69,7 +69,7 @@ The active-versus-beta-zero comparison has mean absolute ranking-score delta
 
 The route-loss control uses the production objective
 `H(W|C) - H(W)` with matched routes concatenated across the complete batch.
-The first-round fixed-seed-2017 formal jobs are launched by
-`scripts/run_first_round.sh`; their checkpoint and evaluation status is kept
-separate under `outputs/causal_training/` and `outputs/evaluated_variants/`.
-No multi-seed experiment is run.
+The first-round fixed-seed-2017 formal jobs are launched concurrently by
+`scripts/run_parallel_first_round.sh` (two jobs per GPU).  They use the
+release protocol and are kept separate under
+`outputs/causal_training_parallel/`; no multi-seed experiment is run.

@@ -35,7 +35,10 @@ COMMON_ARGS=(
   --CTC_loss_coef 0.5
 )
 
-for VARIANT in full no_bind supervision_only union_bind; do
+VARIANT_LIST="${CAUSAL_VARIANTS:-full no_bind supervision_only union_bind}"
+read -r -a VARIANTS <<< "$VARIANT_LIST"
+
+for VARIANT in "${VARIANTS[@]}"; do
   RUN_NAME="${VARIANT}_seed2017"
   if [[ "$VARIANT" == "full" ]]; then
     RUN_NAME="full_repro_seed2017"
