@@ -1,0 +1,20 @@
+{
+  "counts": {
+    "total": 1542,
+    "single": 1031,
+    "multi": 511,
+    "two": 266,
+    "three_or_more": 245,
+    "clean_multi": 511,
+    "clean_two": 266,
+    "clean_three_or_more": 245
+  },
+  "max_windows": 10,
+  "clean_iou_threshold": 0.1,
+  "mean_num_gt": 1.745136186770428,
+  "mean_duration": 149.56549935149158,
+  "gt_overlap_histogram": {
+    "[0,0.1)": 2809
+  },
+  "data": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/data/highlight_test_with_gt.jsonl"
+}

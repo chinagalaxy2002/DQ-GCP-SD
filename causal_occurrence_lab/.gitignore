@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+outputs/*
+!outputs/.gitkeep
+*.ckpt
+*.pt
+*.pth
+*.log
+*.jsonl
+*.json
+tensorboard/
+
+# Curated, small reports and compressed Phase-1 artifacts are publishable.
+# The large working-tree outputs above remain ignored.
+!results/
+!results/**

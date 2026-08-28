@@ -1,0 +1,38 @@
+{
+  "num_records": 511,
+  "boundaries": [
+    0.9603877663612366,
+    0.9803926547368368
+  ],
+  "groups": {
+    "low": {
+      "n": 170,
+      "similarity_mean": 0.9397502605409737,
+      "similarity_min": 0.8466114401817322,
+      "similarity_max": 0.9602565169334412,
+      "aec_d4_final": 0.7224463118580766,
+      "ecr_d4_final": 0.2811904761904762,
+      "coverage@5_50": 0.42761204481792714
+    },
+    "medium": {
+      "n": 170,
+      "similarity_mean": 0.9714019559976321,
+      "similarity_min": 0.9603877663612366,
+      "similarity_max": 0.9803593754768372,
+      "aec_d4_final": 0.8049393090569561,
+      "ecr_d4_final": 0.2046591970121382,
+      "coverage@5_50": 0.5383123249299719
+    },
+    "high": {
+      "n": 171,
+      "similarity_mean": 0.9879924578151807,
+      "similarity_min": 0.9803926547368368,
+      "similarity_max": 0.998936653137207,
+      "aec_d4_final": 0.8400097465886939,
+      "ecr_d4_final": 0.20824282929546087,
+      "coverage@5_50": 0.637719298245614
+    }
+  },
+  "analysis": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/baseline/analysis.json",
+  "clip_feature_dir": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/data/clip_b32_vid_k4"
+}

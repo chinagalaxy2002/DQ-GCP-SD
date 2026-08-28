@@ -1,0 +1,12 @@
+{
+  "variant": "union_bind",
+  "seed": 2017,
+  "decoder_layers": 4,
+  "use_query_cgp": true,
+  "binding_coef": 0.2,
+  "route_coef": 0.01,
+  "binding_target": "union",
+  "inject_residual": true,
+  "native_binding": false,
+  "checkpoint_selection": "val MR-full-mAP"
+}

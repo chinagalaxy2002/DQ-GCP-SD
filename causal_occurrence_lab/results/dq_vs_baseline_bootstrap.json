@@ -1,0 +1,130 @@
+{
+  "left": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/baseline/analysis.json",
+  "right": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/dq_active/analysis.json",
+  "subset": "multi",
+  "bootstrap_samples": 10000,
+  "comparisons": [
+    {
+      "metric": "coverage@5_50",
+      "n": 511,
+      "mean_delta": 0.003926319386201968,
+      "std_delta": 0.2576922029231548,
+      "ci95": [
+        -0.018466339732239927,
+        0.02660436663249774
+      ],
+      "positive_fraction": 0.1761252446183953
+    },
+    {
+      "metric": "d1_final.aec",
+      "n": 511,
+      "mean_delta": 0.026456061876805517,
+      "std_delta": 0.24434714697808851,
+      "ci95": [
+        0.005490304569316312,
+        0.04725270245084334
+      ],
+      "positive_fraction": 0.2328767123287671
+    },
+    {
+      "metric": "d4_final.aec",
+      "n": 511,
+      "mean_delta": -0.023081104587953906,
+      "std_delta": 0.23297419229523672,
+      "ci95": [
+        -0.04306256406672258,
+        -0.002310284844531421
+      ],
+      "positive_fraction": 0.16046966731898238
+    },
+    {
+      "metric": "d1_final.ecr",
+      "n": 511,
+      "mean_delta": -0.04177460938713384,
+      "std_delta": 0.4152540888383613,
+      "ci95": [
+        -0.07853042586897774,
+        -0.005919105084956381
+      ],
+      "positive_fraction": 0.18199608610567514
+    },
+    {
+      "metric": "d4_final.ecr",
+      "n": 511,
+      "mean_delta": 0.0451821824620259,
+      "std_delta": 0.3860554396842619,
+      "ci95": [
+        0.012178035597800764,
+        0.07905620010561301
+      ],
+      "positive_fraction": 0.2328767123287671
+    }
+  ],
+  "activity_matched": [
+    {
+      "metric": "coverage@5_50",
+      "n": 484,
+      "mean_delta": 0.005930243998425819,
+      "std_delta": 0.2585992652714442,
+      "ci95": [
+        -0.016935015741833925,
+        0.028817599698281515
+      ],
+      "positive_fraction": 0.17768595041322313,
+      "activity_threshold": "0.5",
+      "max_count_delta": 1
+    },
+    {
+      "metric": "d1_final.aec",
+      "n": 484,
+      "mean_delta": 0.02390299094844549,
+      "std_delta": 0.24699914196897432,
+      "ci95": [
+        0.00192956349206349,
+        0.04566529745507018
+      ],
+      "positive_fraction": 0.2334710743801653,
+      "activity_threshold": "0.5",
+      "max_count_delta": 1
+    },
+    {
+      "metric": "d4_final.aec",
+      "n": 484,
+      "mean_delta": -0.023830020989111897,
+      "std_delta": 0.23499795037602342,
+      "ci95": [
+        -0.045332956185228916,
+        -0.0028112496720451405
+      ],
+      "positive_fraction": 0.15702479338842976,
+      "activity_threshold": "0.5",
+      "max_count_delta": 1
+    },
+    {
+      "metric": "d1_final.ecr",
+      "n": 484,
+      "mean_delta": -0.04009248327430146,
+      "std_delta": 0.42371827753643915,
+      "ci95": [
+        -0.07785292043814773,
+        -0.0027947494424767315
+      ],
+      "positive_fraction": 0.19008264462809918,
+      "activity_threshold": "0.5",
+      "max_count_delta": 1
+    },
+    {
+      "metric": "d4_final.ecr",
+      "n": 484,
+      "mean_delta": 0.047653482880755604,
+      "std_delta": 0.3917801669474613,
+      "ci95": [
+        0.012361398071625349,
+        0.08271267873540596
+      ],
+      "positive_fraction": 0.23553719008264462,
+      "activity_threshold": "0.5",
+      "max_count_delta": 1
+    }
+  ]
+}

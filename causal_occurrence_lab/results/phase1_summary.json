@@ -1,0 +1,143 @@
+{
+  "root": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1",
+  "modes": {
+    "baseline": {
+      "records": 1542,
+      "multi": 511,
+      "clean_multi": 511,
+      "d4_mr_full_map": 47.58,
+      "multi_coverage@5_50": 0.5347497903270898,
+      "multi_d1_aec": 0.6714891436026464,
+      "multi_d4_aec": 0.7892313546423135,
+      "multi_d1_ecr": 0.3981874941757525,
+      "multi_d4_ecr": 0.2313189202621688,
+      "clean_d4_aec": 0.7892313546423135,
+      "clean_d4_ecr": 0.2313189202621688
+    },
+    "dq_active": {
+      "records": 1542,
+      "multi": 511,
+      "clean_multi": 511,
+      "d4_mr_full_map": 48.04,
+      "multi_coverage@5_50": 0.5386761097132916,
+      "multi_d1_aec": 0.697945205479452,
+      "multi_d4_aec": 0.7661502500543597,
+      "multi_d1_ecr": 0.35641288478861866,
+      "multi_d4_ecr": 0.27650110272419465,
+      "clean_d4_aec": 0.7661502500543597,
+      "clean_d4_ecr": 0.27650110272419465
+    },
+    "dq_beta_zero": {
+      "records": 1542,
+      "multi": 511,
+      "clean_multi": 511,
+      "d4_mr_full_map": 48.07,
+      "multi_coverage@5_50": 0.5366842170658218,
+      "multi_d1_aec": 0.6995325070667536,
+      "multi_d4_aec": 0.7686531233497965,
+      "multi_d1_ecr": 0.35445593762619204,
+      "multi_d4_ecr": 0.2704951386947473,
+      "clean_d4_aec": 0.7686531233497965,
+      "clean_d4_ecr": 0.2704951386947473
+    },
+    "dq_stripped": {
+      "records": 1542,
+      "multi": 511,
+      "clean_multi": 511,
+      "d4_mr_full_map": 48.07,
+      "multi_coverage@5_50": 0.5366842170658218,
+      "multi_d1_aec": 0.6995325070667536,
+      "multi_d4_aec": 0.7686531233497965,
+      "multi_d1_ecr": 0.35445593762619204,
+      "multi_d4_ecr": 0.2704951386947473,
+      "clean_d4_aec": 0.7686531233497965,
+      "clean_d4_ecr": 0.2704951386947473
+    }
+  },
+  "dq_active_vs_beta_zero": {
+    "left": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/dq_active/analysis.json",
+    "right": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/dq_beta_zero/analysis.json",
+    "num_paired_qids": 1542,
+    "active_vs_zero": {
+      "mean_abs_ranking_score_delta": {
+        "mean": 0.0019387055167004793,
+        "median": 0.00016894942382350564,
+        "std": 0.016076612256695613,
+        "n": 15420
+      },
+      "mean_abs_foreground_probability_delta": {
+        "mean": 0.002812142635781098,
+        "median": 0.0006169639527797699,
+        "std": 0.017964933068898483,
+        "n": 15420
+      },
+      "mean_abs_iou_score_delta": {
+        "mean": 0.003328553195795148,
+        "median": 0.0013397634029388428,
+        "std": 0.006934457413326992,
+        "n": 15420
+      },
+      "mean_abs_span_delta_seconds": {
+        "mean": 0.24918351663643767,
+        "median": 0.10436248779296875,
+        "std": 0.6111950048425837,
+        "n": 15420
+      },
+      "top5_query_ranking_jaccard": {
+        "mean": 0.9868136619109381,
+        "median": 1.0,
+        "std": 0.0649735832280184,
+        "n": 1542
+      },
+      "relative_update_mean": {
+        "mean": 0.052236978537203736,
+        "median": 0.05224017798900604,
+        "std": 0.0002707323471616298,
+        "n": 1542
+      }
+    }
+  },
+  "dq_beta_zero_vs_stripped": {
+    "left": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/dq_beta_zero/analysis.json",
+    "right": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/dq_stripped/analysis.json",
+    "num_paired_qids": 1542,
+    "active_vs_zero": {
+      "mean_abs_ranking_score_delta": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std": 0.0,
+        "n": 15420
+      },
+      "mean_abs_foreground_probability_delta": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std": 0.0,
+        "n": 15420
+      },
+      "mean_abs_iou_score_delta": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std": 0.0,
+        "n": 15420
+      },
+      "mean_abs_span_delta_seconds": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std": 0.0,
+        "n": 15420
+      },
+      "top5_query_ranking_jaccard": {
+        "mean": 1.0,
+        "median": 1.0,
+        "std": 0.0,
+        "n": 1542
+      },
+      "relative_update_mean": {
+        "mean": 0.0,
+        "median": 0.0,
+        "std": 0.0,
+        "n": 0
+      }
+    }
+  }
+}

@@ -119,6 +119,23 @@ Replace `{direc}` with the path to your saved checkpoint. For more details on su
 
 ----------
 
+## Causal occurrence-binding experiments
+
+The isolated [causal occurrence lab](causal_occurrence_lab/README.md) tests
+whether candidate-specific temporal evidence binding is learned in Sim-DETR.
+It includes D1--D4 native cross-attention capture, corrected occurrence
+metrics, beta-zero/stripped equivalence checks, and single-seed causal control
+training scripts. Published Phase-1 summaries, manifests, and smoke logs are in
+[causal_occurrence_lab/results](causal_occurrence_lab/results/). Large raw
+per-query records are intentionally kept out of the GitHub commit.
+
+The delivered experiments use seed 2017 only; no multi-seed experiment is
+included in the reported results. Formal 200-epoch causal ablations remain
+reproducible from the provided scripts but are not claimed as completed in
+the current result record.
+
+----------
+
 ## Citation
 
 If you find this repository useful, please cite our work:
