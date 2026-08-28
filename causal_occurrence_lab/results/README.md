@@ -25,8 +25,8 @@ dq_stripped
 
 ## Causal training logs
 
-`causal_training/` contains compact logs and variant manifests for any formal
-jobs that have completed or are currently in progress. The formal comparison
-is fixed to seed 2017 and uses `val MR-full-mAP` for checkpoint selection.
-Check `causal_training/summary.json` before treating a variant as complete;
-it is generated after `run_eval_variants.sh` finishes.
+`causal_training/` contains compact logs, variant manifests, and the complete
+first-round fixed-seed-2017 comparison. The machine-readable summary is
+`causal_training/summary.json`; the narrative interpretation is in
+`../CAUSAL_TRAINING_RESULTS.md`. All four variants were evaluated using
+`val MR-full-mAP` checkpoint selection.

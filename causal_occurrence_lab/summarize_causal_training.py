@@ -59,10 +59,19 @@ def summarize(root: str | Path, train_root: str | Path | None = None) -> dict:
             "records": compact["records"],
             "multi": compact["multi"],
             "clean_multi": compact["clean_multi"],
+            "multi_coverage@5_50": compact["multi_coverage@5_50"],
             "d4_mr": compact["d4_mr"],
             "mr_subsets": compact["mr_subsets"],
             "multi_d4_binding": multi,
             "clean_multi_d4_binding": clean,
+            "multi_binding_by_layer": {
+                stage: compact["binding"]["multi"][stage]
+                for stage in ("d1_final", "d2_final", "d3_final", "d4_final")
+            },
+            "clean_multi_binding_by_layer": {
+                stage: compact["binding"]["clean_multi"][stage]
+                for stage in ("d1_final", "d2_final", "d3_final", "d4_final")
+            },
         }
         config_path = train_root / variant / "variant.json"
         if config_path.is_file():
