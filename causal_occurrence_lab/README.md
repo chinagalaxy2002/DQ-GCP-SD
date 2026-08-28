@@ -79,6 +79,10 @@ CAUSAL_RUN_ROOT="$PWD/causal_occurrence_lab/outputs/causal_training_parallel" \
 bash causal_occurrence_lab/scripts/run_eval_variants.sh
 ```
 
+`scripts/finalize_first_round.sh` can be left running in a fifth tmux session;
+it waits for all four fixed-seed jobs and then performs the evaluation and
+compact artifact collection automatically.
+
 ## Checkpoint conventions
 
 The repository currently contains several DQ-CGP result families.  The
