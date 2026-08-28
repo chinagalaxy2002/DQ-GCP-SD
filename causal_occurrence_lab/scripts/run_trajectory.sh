@@ -15,3 +15,4 @@ python causal_occurrence_lab/analyze_trajectory.py \
   --device "${CAUSAL_DEVICE:-cuda:0}" \
   --output-dir "$OUT_ROOT" \
   "$@"
+

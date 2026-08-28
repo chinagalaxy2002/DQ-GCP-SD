@@ -162,26 +162,61 @@ def binding_metrics(
     *,
     duration: float,
 ) -> Dict[str, Any]:
-    """Compute raw and length-normalized occurrence-binding metrics."""
+    """Compute metrics from GT windows expressed in seconds.
+
+    This compatibility API is useful for generic metric experiments.  The
+    checkpoint analyzer uses :func:`binding_metrics_from_target_spans` so its
+    masks have exactly the same normalized-span semantics as production
+    ``L_bind``.
+    """
 
     attn = _array(attention, dtype=float)
     if attn.ndim != 2:
         raise ValueError(f"Expected [num_queries, num_frames] attention, got {attn.shape}")
     gt = _window_pairs(gt_windows)
     masks = video_bin_masks(gt, attn.shape[-1], duration)
+    return _binding_metrics_from_masks(
+        attn,
+        masks,
+        matched_queries,
+        matched_gt,
+        semantics="seconds_to_duration_bins",
+    )
+
+
+def _binding_metrics_from_masks(
+    attention: Any,
+    masks: Any,
+    matched_queries: Sequence[int],
+    matched_gt: Sequence[int],
+    *,
+    semantics: str,
+) -> Dict[str, Any]:
+    """Compute binding statistics from an explicit ``[GT, frame]`` mask."""
+
+    attn = _array(attention, dtype=float)
+    if attn.ndim != 2:
+        raise ValueError(f"Expected [num_queries, num_frames] attention, got {attn.shape}")
+    masks = np.asarray(masks, dtype=bool)
+    if masks.ndim != 2 or masks.shape[-1] != attn.shape[-1]:
+        raise ValueError(
+            "Expected masks with shape [num_gt, num_frames] matching attention; "
+            f"got {masks.shape} for {attn.shape}"
+        )
+
     evidence = attn[:, None, :] * masks[None, :, :]
-    evidence = evidence.sum(axis=-1) if len(gt) else np.zeros((attn.shape[0], 0))
+    evidence = evidence.sum(axis=-1) if len(masks) else np.zeros((attn.shape[0], 0))
     lengths = (
         masks.sum(axis=-1).astype(float) / max(attn.shape[-1], 1)
-        if len(gt) else np.empty((0,))
+        if len(masks) else np.empty((0,))
     )
-    enrich = evidence / np.maximum(lengths[None, :], EPS) if len(gt) else evidence
+    enrich = evidence / np.maximum(lengths[None, :], EPS) if len(masks) else evidence
 
     rows = []
     for query, target in zip(matched_queries, matched_gt):
         query = int(query)
         target = int(target)
-        if query < 0 or query >= attn.shape[0] or target < 0 or target >= len(gt):
+        if query < 0 or query >= attn.shape[0] or target < 0 or target >= len(masks):
             continue
         raw = evidence[query]
         norm = enrich[query]
@@ -209,20 +244,76 @@ def binding_metrics(
         (i, j) for i, j in combinations(range(len(rows)), 2)
         if rows[i]["target"] != rows[j]["target"]
     ]
-    raw_collisions = sum(raw_dominants[i] == raw_dominants[j] for i, j in pairs)
-    norm_collisions = sum(norm_dominants[i] == norm_dominants[j] for i, j in pairs)
+    raw_collisions = int(sum(raw_dominants[i] == raw_dominants[j] for i, j in pairs))
+    norm_collisions = int(sum(norm_dominants[i] == norm_dominants[j] for i, j in pairs))
+    raw_correct = int(sum(dom == target for dom, target in zip(raw_dominants, targets)))
+    norm_correct = int(sum(dom == target for dom, target in zip(norm_dominants, targets)))
     return {
         "num_matched": len(rows),
-        "aec": float(np.mean(np.asarray(raw_dominants) == np.asarray(targets))) if rows else 0.0,
-        "aec_norm": float(np.mean(np.asarray(norm_dominants) == np.asarray(targets))) if rows else 0.0,
+        "num_correct": raw_correct,
+        "num_correct_norm": norm_correct,
+        "num_valid_pairs": len(pairs),
+        "num_collisions": raw_collisions,
+        "num_collisions_norm": norm_collisions,
+        "aec": float(raw_correct / len(rows)) if rows else 0.0,
+        "aec_norm": float(norm_correct / len(rows)) if rows else 0.0,
         "binding_margin": float(np.mean([row["margin"] for row in rows])) if rows else 0.0,
         "binding_margin_norm": float(np.mean([row["margin_norm"] for row in rows])) if rows else 0.0,
         "ecr": float(raw_collisions / len(pairs)) if pairs else 0.0,
         "ecr_norm": float(norm_collisions / len(pairs)) if pairs else 0.0,
         "own_mass": float(np.mean([row["target_mass"] for row in rows])) if rows else 0.0,
         "own_enrichment": float(np.mean([row["target_enrichment"] for row in rows])) if rows else 0.0,
+        "mask_semantics": semantics,
         "matches": rows,
     }
+
+
+def binding_metrics_from_target_spans(
+    attention: Any,
+    target_spans: Any,
+    matched_queries: Sequence[int],
+    matched_gt: Sequence[int],
+    *,
+    valid_length: int,
+    span_loss_type: str,
+) -> Dict[str, Any]:
+    """Compute metrics with the exact normalized target geometry used by ``L_bind``.
+
+    ``target_spans`` must be the collated production ``span_labels`` tensor:
+    normalized ``(center,width)`` for ``l1`` or inclusive clip indices for
+    ``ce``.  The overlap mask is deliberately delegated to the isolated
+    control helper, which is the same implementation used by the causal
+    training controls.
+    """
+
+    attn = _array(attention, dtype=float)
+    if attn.ndim != 2:
+        raise ValueError(f"Expected [num_queries, num_frames] attention, got {attn.shape}")
+    valid_length = int(valid_length)
+    if valid_length <= 0 or valid_length > attn.shape[-1]:
+        raise ValueError(
+            f"valid_length={valid_length} is incompatible with attention shape {attn.shape}"
+        )
+
+    import torch
+
+    from causal_occurrence_lab.controls import _overlap_for_targets
+
+    spans = torch.as_tensor(_array(target_spans, dtype=np.float32), dtype=torch.float32)
+    masks = _overlap_for_targets(
+        spans,
+        valid_length,
+        span_loss_type=span_loss_type,
+        dtype=torch.float32,
+        device=torch.device("cpu"),
+    ).detach().cpu().numpy()
+    return _binding_metrics_from_masks(
+        attn[:, :valid_length],
+        masks,
+        matched_queries,
+        matched_gt,
+        semantics="production_normalized_target_spans",
+    )
 
 
 def route_metrics(weights: Any, selected_rows: Optional[Sequence[int]] = None) -> Dict[str, Any]:
@@ -266,7 +357,7 @@ def route_metrics(weights: Any, selected_rows: Optional[Sequence[int]] = None) -
 
 
 __all__ = [
-    "binding_metrics", "fixed_k_metrics", "interval_iou", "iou_matrix",
+    "binding_metrics", "binding_metrics_from_target_spans", "fixed_k_metrics", "interval_iou", "iou_matrix",
     "is_clean_multi", "occurrence_bucket", "pairwise_iou", "route_metrics",
     "video_bin_masks",
 ]

@@ -1,0 +1,26 @@
+{
+  "checkpoint": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/results_dq_cgp/select_v3_parameter/beta_0p050_bind_0p20_route_0p010_center/runs/hl-video_tef-sim_detr_dq_cgp_v3_grid_beta_0p050_bind_0p20_route_0p010_center_seed2017-2026_08_21_08_50_54/model_best.ckpt",
+  "data": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/data/highlight_test_with_gt.jsonl",
+  "num_samples": 100,
+  "max_abs_delta": {
+    "pred_logits": 0.0,
+    "pred_spans": 0.0,
+    "iou_scores": 0.0,
+    "saliency_scores": 0.0,
+    "d1_pred_logits": 0.0,
+    "d1_pred_spans": 0.0,
+    "d1_pred_masks": 0.0,
+    "d1_iou_scores": 0.0,
+    "d2_pred_logits": 0.0,
+    "d2_pred_spans": 0.0,
+    "d2_pred_masks": 0.0,
+    "d2_iou_scores": 0.0,
+    "d3_pred_logits": 0.0,
+    "d3_pred_spans": 0.0,
+    "d3_pred_masks": 0.0,
+    "d3_iou_scores": 0.0
+  },
+  "bitwise_equal": true,
+  "tolerance": 1e-06,
+  "within_tolerance": true
+}

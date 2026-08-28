@@ -29,3 +29,4 @@ python causal_occurrence_lab/train_causal.py \
   --lr_drop 100 \
   --n_epoch "${CAUSAL_EPOCHS:-200}" \
   "$@"
+

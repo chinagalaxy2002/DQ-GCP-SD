@@ -29,7 +29,7 @@ from causal_occurrence_lab.common import (
 )
 from causal_occurrence_lab.controls import install_injection_control
 from causal_occurrence_lab.metrics import (
-    binding_metrics,
+    binding_metrics_from_target_spans,
     fixed_k_metrics,
     is_clean_multi,
     occurrence_bucket,
@@ -202,12 +202,75 @@ def _postprocess_submissions(submissions):
     return [processor(copy.deepcopy(lines)) for lines in submissions]
 
 
-def _formal_metrics(submission, ground_truth):
+def _formal_metrics(submission, ground_truth, *, full_only: bool = False):
     from standalone_eval.eval import eval_submission
 
     if not submission or not ground_truth:
         return None
+    if full_only:
+        # The stock evaluator always also evaluates short/middle/long ranges.
+        # A legitimate occurrence-count subset can have an empty length range
+        # (for example, no single-occurrence query may be shorter than 10s),
+        # which makes that legacy helper reduce an empty AP array to a scalar.
+        # Compute the official full-range primitives directly for the subset,
+        # preserving the same AP/R1 implementation without changing the
+        # repository evaluator.
+        from standalone_eval.eval import compute_mr_ap, compute_mr_r1
+
+        mr_map = compute_mr_ap(
+            submission, ground_truth, num_workers=8, chunksize=50
+        )
+        mr_r1 = compute_mr_r1(submission, ground_truth)
+        brief = {
+            "MR-full-mAP": mr_map["average"],
+            "MR-full-mAP@0.5": mr_map["0.5"],
+            "MR-full-mAP@0.75": mr_map["0.75"],
+            "MR-full-R1@0.5": mr_r1["0.5"],
+            "MR-full-R1@0.7": mr_r1["0.7"],
+        }
+        return {
+            "brief": brief,
+            "full": {"MR-mAP": mr_map, "MR-R1": mr_r1},
+        }
     return eval_submission(submission, ground_truth, verbose=False, match_number=False)
+
+
+def _subset_name(num_gt: int) -> str:
+    """Return the occurrence-count bucket used for subset MR evaluation."""
+
+    if num_gt <= 1:
+        return "single"
+    if num_gt == 2:
+        return "two"
+    return "three_or_more"
+
+
+def _subset_membership(num_gt: int, subset: str) -> bool:
+    if subset == "single":
+        return num_gt <= 1
+    if subset == "multi":
+        return num_gt >= 2
+    if subset == "two":
+        return num_gt == 2
+    if subset == "three_or_more":
+        return num_gt >= 3
+    raise ValueError(f"Unknown formal subset {subset!r}")
+
+
+def _formal_subset_rows(dataset_rows, max_windows: int, subset: str):
+    """Select raw QVHighlights rows using the same truncated GT set as training."""
+
+    selected = []
+    for row in dataset_rows:
+        num_gt = len(list(row.get("relevant_windows", []))[: int(max_windows)])
+        if _subset_membership(num_gt, subset):
+            selected.append(row)
+    return selected
+
+
+def _filter_submission_qids(submission, rows):
+    qids = {str(row.get("qid")) for row in rows}
+    return [line for line in submission if str(line.get("qid")) in qids]
 
 
 def analyze(
@@ -283,9 +346,11 @@ def analyze(
                     "clean_multi": bool(is_clean_multi(gt_windows, clean_iou)),
                     "occurrence_bucket": occurrence_bucket(gt_windows, clean_iou),
                     "valid_video_length": valid_length,
+                    "binding_mask_semantics": "production_normalized_target_spans",
                     "hungarian": {},
                     "coverage": {},
                 }
+                target_spans = targets["span_labels"][sample_index]["spans"]
                 if residual is not None:
                     record.update({
                         "relative_update_mean": residual["relative_update_mean"][sample_index],
@@ -329,13 +394,15 @@ def analyze(
                     if native_attention[layer_id] is not None:
                         native = native_attention[layer_id][sample_index, :, :valid_length]
                         native = _normalize_video_attention(native)
-                        record[f"{name}_own"] = binding_metrics(
-                            native, gt_windows, own_q, own_g,
-                            duration=float(meta["duration"]),
+                        record[f"{name}_own"] = binding_metrics_from_target_spans(
+                            native, target_spans, own_q, own_g,
+                            valid_length=valid_length,
+                            span_loss_type=opt.span_loss_type,
                         )
-                        record[f"{name}_final"] = binding_metrics(
-                            native, gt_windows, final_q, final_g,
-                            duration=float(meta["duration"]),
+                        record[f"{name}_final"] = binding_metrics_from_target_spans(
+                            native, target_spans, final_q, final_g,
+                            valid_length=valid_length,
+                            span_loss_type=opt.span_loss_type,
                         )
                     else:
                         record[f"{name}_own"] = None
@@ -346,9 +413,10 @@ def analyze(
                 if qout is not None:
                     dq_attention = qout.temporal_attention[sample_index, :, :valid_length]
                     final_q, final_g = _indices_for_sample(final_indices, sample_index)
-                    record["dq_private"] = binding_metrics(
-                        dq_attention, gt_windows, final_q, final_g,
-                        duration=float(meta["duration"]),
+                    record["dq_private"] = binding_metrics_from_target_spans(
+                        dq_attention, target_spans, final_q, final_g,
+                        valid_length=valid_length,
+                        span_loss_type=opt.span_loss_type,
                     )
                 else:
                     record["dq_private"] = None
@@ -386,6 +454,21 @@ def analyze(
             f"d{layer_id + 1}": _formal_metrics(submission, dataset.data)
             for layer_id, submission in enumerate(processed_submissions)
         }
+        subset_names = ("single", "multi", "two", "three_or_more")
+        final_submission = processed_submissions[-1]
+        formal["subsets"] = {}
+        for subset in subset_names:
+            subset_rows = _formal_subset_rows(
+                dataset.data, opt.max_windows, subset
+            )
+            formal["subsets"][subset] = {
+                "num_records": len(subset_rows),
+                "d4": _formal_metrics(
+                    _filter_submission_qids(final_submission, subset_rows),
+                    subset_rows,
+                    full_only=True,
+                ),
+            }
     result = {
         "manifest": checkpoint_manifest(checkpoint, checkpoint_data),
         "mode": mode,
@@ -396,6 +479,11 @@ def analyze(
         "prediction_protocol": {
             "ranking": "softmax(pred_logits)[...,0] * sigmoid(iou_scores[...,0])",
             "postprocess": "clip_ts + round_multiple, clip_length=2",
+        },
+        "binding_metric_protocol": {
+            "mask": "same normalized target-span overlap as sim_detr.dq_cgp.loss",
+            "span_loss_type": opt.span_loss_type,
+            "target_span_source": "collated targets['span_labels'][sample]['spans']",
         },
         "formal_metrics": formal,
         "records": records,

@@ -8,9 +8,9 @@ analysis and short implementation smoke tests.
 The four checkpoint analyses cover all 1,542 test queries. The compact JSON
 files contain the dataset census, qid-paired bootstrap comparisons, active vs
 beta-zero perturbation statistics, beta-zero vs stripped equivalence, and
-CLIP-similarity strata. The full per-query JSON records remain in the local
-working tree under `outputs/phase1/` and are intentionally excluded from the
-GitHub commit because they are large.
+CLIP-similarity strata. The `raw/` directory contains gzip-compressed full
+per-query records; the uncompressed working-tree copies remain ignored because
+they are large.
 
 Checkpoint modes:
 

@@ -1,0 +1,43 @@
+{
+  "left": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/dq_beta_zero/analysis.json",
+  "right": "/home/guoxiangyu/VLMbasedIter_momentretrival/Sim-DETR/causal_occurrence_lab/outputs/phase1/dq_stripped/analysis.json",
+  "num_paired_qids": 1542,
+  "active_vs_zero": {
+    "mean_abs_ranking_score_delta": {
+      "mean": 0.0,
+      "median": 0.0,
+      "std": 0.0,
+      "n": 15420
+    },
+    "mean_abs_foreground_probability_delta": {
+      "mean": 0.0,
+      "median": 0.0,
+      "std": 0.0,
+      "n": 15420
+    },
+    "mean_abs_iou_score_delta": {
+      "mean": 0.0,
+      "median": 0.0,
+      "std": 0.0,
+      "n": 15420
+    },
+    "mean_abs_span_delta_seconds": {
+      "mean": 0.0,
+      "median": 0.0,
+      "std": 0.0,
+      "n": 15420
+    },
+    "top5_query_ranking_jaccard": {
+      "mean": 1.0,
+      "median": 1.0,
+      "std": 0.0,
+      "n": 1542
+    },
+    "relative_update_mean": {
+      "mean": 0.0,
+      "median": 0.0,
+      "std": 0.0,
+      "n": 0
+    }
+  }
+}
