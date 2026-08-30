@@ -64,6 +64,23 @@ The exact Baseline vs NativeBind training pair is launched with:
 bash causal_occurrence_lab/scripts/run_native_binding_pair.sh
 ```
 
+### Layer-Consistent Binding (LCB Acquire → Preserve)
+
+We further provide the complete implementation of **Layer-Consistent Binding (LCB)** under the decoupled **Acquire → Preserve** framework:
+
+$$\text{Acquire ownership at D1} \longrightarrow \text{Preserve ownership through D2–D4}$$
+
+$$L = L_{\text{Sim-DETR}} + 0.5 \cdot L_{\text{D1-bind}} + 0.1 \cdot L_{\text{late-bind}} + 0.1 \cdot L_{\text{owner-cons}} + 0.1 \cdot L_{\text{drop}}$$
+
+- **D1 Ownership Acquisition ($L_{\text{D1-bind}}$, $\lambda=0.5$)**: Matches the verified NativeBind signal for initial query-occurrence binding.
+- **D2–D4 Direct Ownership Maintenance ($L_{\text{late-bind}}$, $\lambda=0.1$)**: Directly anchors subsequent layers to prevent losing the GT occurrence.
+- **D1 → D2–D4 Ownership Consistency ($L_{\text{owner-cons}}$, $\lambda=0.1$)**: JS divergence on $\text{stopgrad}(p^{(1)})$ preventing occurrence identity drift.
+- **Anti-Washout Protection ($L_{\text{drop}}$, $\lambda=0.1, \delta=0.05$)**: Hinge loss preventing matched occurrence attention mass decay.
+
+- Detailed documentation: [Layeerconsistentbinding/README.md](Layeerconsistentbinding/README.md)
+- Training script: `bash Layeerconsistentbinding/scripts/run_train_lcb.sh`
+- Evaluation script: `bash Layeerconsistentbinding/scripts/run_eval_lcb.sh <checkpoint> <test_jsonl> <output_dir>`
+
 ### Exploratory DQ-CGP variants on test
 
 | Method | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | mAP Avg. |
