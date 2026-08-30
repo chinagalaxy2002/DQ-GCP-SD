@@ -4,3 +4,19 @@ code/
 __pycache__/
 *.py[cod]
 .pytest_cache/
+
+# Data and features
+data/
+*.ckpt
+*.pt
+*.pth
+*.tar.gz
+*.zip
+
+# Logs and large run outputs
+*.log
+*.log.txt
+results_dq_cgp/
+layerwise_ownership_outputs/
+Layeerconsistentbinding/outputs/
+causal_occurrence_lab/outputs/
