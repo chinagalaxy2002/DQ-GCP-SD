@@ -48,6 +48,48 @@ python causal_occurrence_lab/analyze_checkpoints.py \
 architecture and feature paths; command-line dataset/device overrides are
 available when a checkpoint was moved.
 
+## Completed Native Binding pair
+
+The completed pure Native Binding experiment is documented in
+[`NATIVE_BINDING_RESULTS.md`](NATIVE_BINDING_RESULTS.md). It includes only the
+fully trained Sim-DETR baseline and NativeBind `lambda=0.5`; incomplete
+coefficient runs are excluded.
+
+Launch the exact seed-2017 Baseline vs NativeBind pair on two GPUs:
+
+```bash
+bash causal_occurrence_lab/scripts/run_native_binding_pair.sh
+```
+
+The launcher shares one argument list across both jobs. The only experimental
+difference is `--variant native_bind --query_cgp_binding_loss_coef 0.5` for the
+second job. For sequential execution on one GPU:
+
+```bash
+CAUSAL_PARALLEL=0 BASELINE_GPU_ID=0 NATIVE_GPU_ID=0 \
+bash causal_occurrence_lab/scripts/run_native_binding_pair.sh
+```
+
+If the fixed baseline is already available, train only NativeBind with:
+
+```bash
+bash causal_occurrence_lab/scripts/run_native_binding_lambda_0p5.sh
+```
+
+After validation-based checkpoint selection, evaluate both `model_best.ckpt`
+files with the same test protocol:
+
+```bash
+CAUSAL_BASELINE_CHECKPOINT=/path/to/baseline/model_best.ckpt \
+NATIVE_BIND_CHECKPOINT=/path/to/native_bind/model_best.ckpt \
+bash causal_occurrence_lab/scripts/eval_native_binding_completed.sh
+```
+
+The evaluation launcher reconstructs both checkpoints with `--mode baseline`,
+runs the formal D1-D4 and occurrence-subset metrics, and writes a compact
+`summary.json`. The published copy is
+[`results/native_binding/summary.json`](results/native_binding/summary.json).
+
 The first causal training round is intentionally explicit:
 
 ```bash
@@ -118,3 +160,8 @@ formal first-round jobs use only seed 2017 and are launched concurrently by
 not run.  Generated checkpoints, logs, and JSON outputs are ignored by the
 local `.gitignore`; compact publishable summaries are copied into
 `results/` after evaluation.
+
+The dedicated Baseline vs NativeBind `lambda=0.5` pair is also complete. Its
+validation, test, occurrence-subset, and D1/D4 mechanism results are published
+in `NATIVE_BINDING_RESULTS.md`; runs that did not reach 200 epochs are not
+reported.

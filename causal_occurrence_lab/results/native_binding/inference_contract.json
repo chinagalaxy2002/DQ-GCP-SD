@@ -1,0 +1,39 @@
+{
+  "checkpoint": "model_best.ckpt",
+  "state_keys": 287,
+  "state_numel": 11934706,
+  "query_cgp_keys": 0,
+  "baseline_contract": {
+    "checkpoint": "model_best.ckpt",
+    "same_keyset": true,
+    "shape_mismatches": {},
+    "state_numel_delta": 0
+  },
+  "capture_equivalence": {
+    "num_compared_output_tensors": 22,
+    "captured_attention_shapes": [
+      [
+        2,
+        10,
+        75
+      ],
+      [
+        2,
+        10,
+        75
+      ],
+      [
+        2,
+        10,
+        75
+      ],
+      [
+        2,
+        10,
+        75
+      ]
+    ],
+    "max_abs_output_difference": 0.0,
+    "exact": true
+  }
+}

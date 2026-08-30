@@ -37,6 +37,33 @@ sha256sum checkpoints/model_best.ckpt
 # cb0df35b25397e34b8da27e0dd9a266d4fca00c0584cfbd45b5be8639ebc3e19
 ```
 
+### Completed Native Hungarian Binding control
+
+We also completed a parameter-free control that supervises only Sim-DETR's
+existing D1 query-to-video cross-attention. It uses the final D4 Hungarian
+assignment and adds `0.5 * L_native_bind` during training, while retaining the
+Vanilla Sim-DETR architecture and inference path.
+
+| Split | Method | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | mAP Avg. |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Validation | Sim-DETR baseline | 68.32 | 53.81 | 69.03 | 50.77 | 49.14 |
+| Validation | NativeBind (`lambda=0.5`) | **69.16** | **54.39** | **70.03** | **50.88** | **49.67** |
+| Test | Sim-DETR baseline | 66.86 | **51.56** | 67.70 | **48.70** | **47.58** |
+| Test | NativeBind (`lambda=0.5`) | **67.06** | 51.10 | **67.85** | 48.07 | 47.25 |
+
+On the 511 multi-occurrence test queries, D1 AEC improves from `0.6696` to
+`0.8480` and D1 ECR falls from `0.3954` to `0.1490`, confirming that the loss
+directly changes early occurrence ownership. The gain does not propagate to
+D4, and headline test MR mAP decreases by `0.33`; this control is therefore a
+mechanism result rather than a claimed test-MR improvement. See the
+[full method, completed-run results, and paired reproduction commands](causal_occurrence_lab/NATIVE_BINDING_RESULTS.md).
+
+The exact Baseline vs NativeBind training pair is launched with:
+
+```bash
+bash causal_occurrence_lab/scripts/run_native_binding_pair.sh
+```
+
 ### Exploratory DQ-CGP variants on test
 
 | Method | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | mAP Avg. |
@@ -130,9 +157,9 @@ training scripts. Published Phase-1 summaries, manifests, and smoke logs are in
 per-query records are intentionally kept out of the GitHub commit.
 
 The delivered experiments use seed 2017 only; no multi-seed experiment is
-included in the reported results. Formal 200-epoch causal ablations remain
-reproducible from the provided scripts but are not claimed as completed in
-the current result record.
+included in the reported results. The fixed-seed first-round causal controls
+and the 200-epoch NativeBind `lambda=0.5` run are complete. Incomplete
+coefficient sweeps are excluded from the published result record.
 
 ----------
 

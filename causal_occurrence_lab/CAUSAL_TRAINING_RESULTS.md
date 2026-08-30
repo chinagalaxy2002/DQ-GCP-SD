@@ -1,5 +1,12 @@
 # Sim-DETR causal training results
 
+The later parameter-free Baseline vs NativeBind `lambda=0.5` experiment is
+reported separately in
+[`NATIVE_BINDING_RESULTS.md`](NATIVE_BINDING_RESULTS.md). Its delivery includes
+the completed validation/test results, a one-command paired training launcher,
+the common evaluation launcher, and machine-readable artifacts. Incomplete
+NativeBind coefficient runs are not included.
+
 This is the first-round controlled training on QVHighlights using one fixed
 seed (`2017`).  No multi-seed experiment was run.  The four jobs used the
 same release protocol: four decoder layers, two encoder layers, batch size

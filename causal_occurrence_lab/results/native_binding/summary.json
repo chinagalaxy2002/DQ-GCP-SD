@@ -1,0 +1,238 @@
+{
+  "experiment": "Vanilla Sim-DETR vs Vanilla Sim-DETR + Native Hungarian Binding",
+  "selection": "best checkpoint by validation MR-full-mAP",
+  "included_runs": {
+    "baseline": {
+      "completed": true,
+      "epoch": 114,
+      "sha256": "65c66b11ec8f5d26f2355c7cbd440ea1f1dbe382a8f028db7d06f2687cad5772"
+    },
+    "native_bind_lambda_0p5": {
+      "completed": true,
+      "epoch": 143,
+      "lambda_native_bind": 0.5,
+      "sha256": "3d639f43ff9f33c2e6a7765c91dbf55f31cc26750be554b0335697d95aa0f9b6"
+    }
+  },
+  "checkpoint_contract": {
+    "architecture": "Vanilla Sim-DETR",
+    "inference_mode": "baseline",
+    "added_trainable_parameters": 0,
+    "native_bind_is_training_only": true
+  },
+  "validation": {
+    "baseline": {
+      "MR-full-R1@0.5": 68.32,
+      "MR-full-R1@0.7": 53.81,
+      "MR-full-mAP@0.5": 69.03,
+      "MR-full-mAP@0.75": 50.77,
+      "MR-full-mAP": 49.14,
+      "HL-min-Fair-mAP": 77.9,
+      "HL-min-Good-mAP": 66.74,
+      "HL-min-VeryGood-mAP": 40.97
+    },
+    "native_bind_lambda_0p5": {
+      "MR-full-R1@0.5": 69.16,
+      "MR-full-R1@0.7": 54.39,
+      "MR-full-mAP@0.5": 70.03,
+      "MR-full-mAP@0.75": 50.88,
+      "MR-full-mAP": 49.67,
+      "HL-min-Fair-mAP": 78.21,
+      "HL-min-Good-mAP": 67.04,
+      "HL-min-VeryGood-mAP": 41.19
+    },
+    "delta_native_minus_baseline": {
+      "MR-full-R1@0.5": 0.84,
+      "MR-full-R1@0.7": 0.58,
+      "MR-full-mAP@0.5": 1.0,
+      "MR-full-mAP@0.75": 0.11,
+      "MR-full-mAP": 0.53,
+      "HL-min-Fair-mAP": 0.31,
+      "HL-min-Good-mAP": 0.3,
+      "HL-min-VeryGood-mAP": 0.22
+    }
+  },
+  "test": {
+    "num_records": 1542,
+    "d4": {
+      "baseline": {
+        "MR-full-R1@0.5": 66.86,
+        "MR-full-R1@0.7": 51.56,
+        "MR-full-mAP@0.5": 67.7,
+        "MR-full-mAP@0.75": 48.7,
+        "MR-full-mAP": 47.58
+      },
+      "native_bind_lambda_0p5": {
+        "MR-full-R1@0.5": 67.06,
+        "MR-full-R1@0.7": 51.1,
+        "MR-full-mAP@0.5": 67.85,
+        "MR-full-mAP@0.75": 48.07,
+        "MR-full-mAP": 47.25
+      },
+      "delta_native_minus_baseline": {
+        "MR-full-R1@0.5": 0.2,
+        "MR-full-R1@0.7": -0.46,
+        "MR-full-mAP@0.5": 0.15,
+        "MR-full-mAP@0.75": -0.63,
+        "MR-full-mAP": -0.33
+      }
+    },
+    "highlight": {
+      "baseline": {
+        "HL-min-Fair-mAP": 77.12,
+        "HL-min-Good-mAP": 65.95,
+        "HL-min-VeryGood-mAP": 39.86
+      },
+      "native_bind_lambda_0p5": {
+        "HL-min-Fair-mAP": 77.79,
+        "HL-min-Good-mAP": 66.45,
+        "HL-min-VeryGood-mAP": 40.19
+      },
+      "delta_native_minus_baseline": {
+        "HL-min-Fair-mAP": 0.67,
+        "HL-min-Good-mAP": 0.5,
+        "HL-min-VeryGood-mAP": 0.33
+      }
+    },
+    "occurrence_subsets": {
+      "baseline": {
+        "single": {
+          "num_records": 1031,
+          "d4": {
+            "MR-full-R1@0.5": 71.0,
+            "MR-full-R1@0.7": 57.42,
+            "MR-full-mAP@0.5": 77.76,
+            "MR-full-mAP@0.75": 59.41,
+            "MR-full-mAP": 57.24
+          }
+        },
+        "multi": {
+          "num_records": 511,
+          "d4": {
+            "MR-full-R1@0.5": 58.51,
+            "MR-full-R1@0.7": 39.73,
+            "MR-full-mAP@0.5": 47.41,
+            "MR-full-mAP@0.75": 27.08,
+            "MR-full-mAP": 28.09
+          }
+        },
+        "two": {
+          "num_records": 266,
+          "d4": {
+            "MR-full-R1@0.5": 66.92,
+            "MR-full-R1@0.7": 42.48,
+            "MR-full-mAP@0.5": 56.06,
+            "MR-full-mAP@0.75": 32.43,
+            "MR-full-mAP": 33.72
+          }
+        },
+        "three_or_more": {
+          "num_records": 245,
+          "d4": {
+            "MR-full-R1@0.5": 49.39,
+            "MR-full-R1@0.7": 36.73,
+            "MR-full-mAP@0.5": 38.02,
+            "MR-full-mAP@0.75": 21.26,
+            "MR-full-mAP": 21.98
+          }
+        }
+      },
+      "native_bind_lambda_0p5": {
+        "single": {
+          "num_records": 1031,
+          "d4": {
+            "MR-full-R1@0.5": 70.9,
+            "MR-full-R1@0.7": 57.03,
+            "MR-full-mAP@0.5": 77.58,
+            "MR-full-mAP@0.75": 58.75,
+            "MR-full-mAP": 56.7
+          }
+        },
+        "multi": {
+          "num_records": 511,
+          "d4": {
+            "MR-full-R1@0.5": 59.3,
+            "MR-full-R1@0.7": 39.14,
+            "MR-full-mAP@0.5": 48.22,
+            "MR-full-mAP@0.75": 26.54,
+            "MR-full-mAP": 28.18
+          }
+        },
+        "two": {
+          "num_records": 266,
+          "d4": {
+            "MR-full-R1@0.5": 66.92,
+            "MR-full-R1@0.7": 43.61,
+            "MR-full-mAP@0.5": 57.46,
+            "MR-full-mAP@0.75": 31.89,
+            "MR-full-mAP": 33.99
+          }
+        },
+        "three_or_more": {
+          "num_records": 245,
+          "d4": {
+            "MR-full-R1@0.5": 51.02,
+            "MR-full-R1@0.7": 34.29,
+            "MR-full-mAP@0.5": 38.18,
+            "MR-full-mAP@0.75": 20.73,
+            "MR-full-mAP": 21.88
+          }
+        }
+      },
+      "delta_native_minus_baseline": {
+        "single": {
+          "MR-full-R1@0.5": -0.1,
+          "MR-full-R1@0.7": -0.39,
+          "MR-full-mAP@0.5": -0.18,
+          "MR-full-mAP@0.75": -0.66,
+          "MR-full-mAP": -0.54
+        },
+        "multi": {
+          "MR-full-R1@0.5": 0.79,
+          "MR-full-R1@0.7": -0.59,
+          "MR-full-mAP@0.5": 0.81,
+          "MR-full-mAP@0.75": -0.54,
+          "MR-full-mAP": 0.09
+        },
+        "two": {
+          "MR-full-R1@0.5": 0.0,
+          "MR-full-R1@0.7": 1.13,
+          "MR-full-mAP@0.5": 1.4,
+          "MR-full-mAP@0.75": -0.54,
+          "MR-full-mAP": 0.27
+        },
+        "three_or_more": {
+          "MR-full-R1@0.5": 1.63,
+          "MR-full-R1@0.7": -2.44,
+          "MR-full-mAP@0.5": 0.16,
+          "MR-full-mAP@0.75": -0.53,
+          "MR-full-mAP": -0.1
+        }
+      }
+    },
+    "mechanism_on_511_multi_occurrence_queries": {
+      "assignment": "final D4 Hungarian assignment traced to native attention",
+      "baseline": {
+        "multi_coverage@5_50": 0.5347497903270898,
+        "d1_final_aec": 0.6696463516913614,
+        "d1_final_ecr": 0.3953809834436057,
+        "d4_final_aec": 0.792807442611748,
+        "d4_final_ecr": 0.23113409747460628
+      },
+      "native_bind_lambda_0p5": {
+        "multi_coverage@5_50": 0.5414593234554096,
+        "d1_final_aec": 0.8480096604851987,
+        "d1_final_ecr": 0.14904637654148417,
+        "d4_final_aec": 0.7322096418476066,
+        "d4_final_ecr": 0.32496194824961944
+      },
+      "delta_native_minus_baseline": {
+        "multi_coverage@5_50": 0.00671,
+        "d1_final_aec": 0.178363,
+        "d1_final_ecr": -0.246335,
+        "d4_final_aec": -0.060598,
+        "d4_final_ecr": 0.093828
+      }
+    }
+  }
+}
