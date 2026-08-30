@@ -32,13 +32,14 @@ COMMON_ARGS=(
   --device "$DEVICE"
   --VTC_loss_coef 0.3
   --CTC_loss_coef 0.5
-  --lcb-layer-bind-coef 0.5
+  --lcb-d1-bind-coef 0.5
+  --lcb-late-bind-coef 0.1
   --lcb-owner-cons-coef 0.1
   --lcb-drop-coef 0.1
   --lcb-drop-margin 0.05
 )
 
-echo "=== Running Layer-Consistent Binding (LCB-Full) Training ==="
+echo "=== Running Layer-Consistent Binding (LCB Acquire -> Preserve) Training ==="
 python Layeerconsistentbinding/train_lcb.py \
   --variant lcb_full \
   --output-dir "$OUT_ROOT/lcb_full_seed2017" \

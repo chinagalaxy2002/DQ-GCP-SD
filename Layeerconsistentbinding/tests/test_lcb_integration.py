@@ -56,7 +56,8 @@ class TestLCBIntegration(unittest.TestCase):
         install_layer_consistent_binding_control(
             criterion,
             capture,
-            layer_bind_coef=0.5,
+            d1_bind_coef=0.5,
+            late_bind_coef=0.1,
             owner_cons_coef=0.1,
             drop_coef=0.1,
             drop_margin=0.05,
@@ -96,7 +97,8 @@ class TestLCBIntegration(unittest.TestCase):
         losses = criterion(outputs, targets)
 
         # Check that LCB losses are computed and included
-        self.assertIn("loss_lcb_layer_bind", losses)
+        self.assertIn("loss_lcb_d1_bind", losses)
+        self.assertIn("loss_lcb_late_bind", losses)
         self.assertIn("loss_lcb_owner_cons", losses)
         self.assertIn("loss_lcb_drop", losses)
 

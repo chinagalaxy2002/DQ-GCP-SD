@@ -1,10 +1,11 @@
-"""Train Sim-DETR with Layer-Consistent Binding (LCB-Full).
+"""Train Sim-DETR with Layer-Consistent Binding (LCB Acquire -> Preserve).
 
 This training entrypoint implements the official Layer-Consistent Binding protocol:
 - Native Sim-DETR architecture without prompt/router/residual modifications.
 - Native cross-attention captured across decoder layers D1–D4.
 - Hungarian matching on final D4 predictions only.
-- Multi-layer matched binding loss (L_layer_bind, coef=0.5).
+- D1 Ownership Acquisition (L_D1-bind, coef=0.5).
+- D2–D4 Direct Ownership Maintenance (L_late-bind, coef=0.1).
 - Occurrence-level consistency loss (L_owner_cons, coef=0.1).
 - Anti-washout hinge loss (L_drop, coef=0.1, margin=0.05).
 - Validation-selected 200 epochs run on seed 2017.
@@ -34,10 +35,11 @@ from Layeerconsistentbinding.controls import (
 
 LCB_VARIANTS = {
     "lcb_full": {
-        "description": "Layer-Consistent Binding on native D1–D4 Sim-DETR attention",
+        "description": "Layer-Consistent Binding Acquire -> Preserve on native D1–D4 Sim-DETR attention",
         "use_dq": False,
         "native": "layer_consistent",
-        "layer_bind_coef": 0.5,
+        "d1_bind_coef": 0.5,
+        "late_bind_coef": 0.1,
         "owner_cons_coef": 0.1,
         "drop_coef": 0.1,
         "drop_margin": 0.05,
@@ -46,7 +48,8 @@ LCB_VARIANTS = {
         "description": "D1-only native binding (reference comparison)",
         "use_dq": False,
         "native": "d1_only",
-        "layer_bind_coef": 0.5,
+        "d1_bind_coef": 0.5,
+        "late_bind_coef": 0.0,
         "owner_cons_coef": 0.0,
         "drop_coef": 0.0,
         "drop_margin": 0.05,
@@ -55,7 +58,8 @@ LCB_VARIANTS = {
         "description": "Clean Sim-DETR baseline without binding regularizers",
         "use_dq": False,
         "native": "none",
-        "layer_bind_coef": 0.0,
+        "d1_bind_coef": 0.0,
+        "late_bind_coef": 0.0,
         "owner_cons_coef": 0.0,
         "drop_coef": 0.0,
         "drop_margin": 0.05,
@@ -79,7 +83,7 @@ def build_parser():
     _escape_percent_help(base.parser)
     parser = base.parser
 
-    group = parser.add_argument_group("Layer-Consistent Binding (LCB)")
+    group = parser.add_argument_group("Layer-Consistent Binding (LCB Acquire -> Preserve)")
     group.add_argument(
         "--variant",
         choices=sorted(LCB_VARIANTS),
@@ -98,10 +102,16 @@ def build_parser():
         help="Number of decoder layers (default: 4)",
     )
     group.add_argument(
-        "--lcb-layer-bind-coef",
+        "--lcb-d1-bind-coef",
         type=float,
         default=None,
-        help="Override L_layer_bind coefficient (default: 0.5 for lcb_full)",
+        help="Override L_D1-bind coefficient (default: 0.5 for lcb_full)",
+    )
+    group.add_argument(
+        "--lcb-late-bind-coef",
+        type=float,
+        default=None,
+        help="Override L_late-bind coefficient for D2-D4 (default: 0.1 for lcb_full)",
     )
     group.add_argument(
         "--lcb-owner-cons-coef",
@@ -130,24 +140,29 @@ def finalize_options(args):
     args.seed = int(args.seed)
     args.use_query_cgp = False
 
-    args.lcb_layer_bind_coef = (
-        cfg["layer_bind_coef"]
-        if args.lcb_layer_bind_coef is None
-        else float(args.lcb_layer_bind_coef)
+    args.lcb_d1_bind_coef = (
+        cfg["d1_bind_coef"]
+        if getattr(args, "lcb_d1_bind_coef", None) is None
+        else float(args.lcb_d1_bind_coef)
+    )
+    args.lcb_late_bind_coef = (
+        cfg["late_bind_coef"]
+        if getattr(args, "lcb_late_bind_coef", None) is None
+        else float(args.lcb_late_bind_coef)
     )
     args.lcb_owner_cons_coef = (
         cfg["owner_cons_coef"]
-        if args.lcb_owner_cons_coef is None
+        if getattr(args, "lcb_owner_cons_coef", None) is None
         else float(args.lcb_owner_cons_coef)
     )
     args.lcb_drop_coef = (
         cfg["drop_coef"]
-        if args.lcb_drop_coef is None
+        if getattr(args, "lcb_drop_coef", None) is None
         else float(args.lcb_drop_coef)
     )
     args.lcb_drop_margin = (
         cfg["drop_margin"]
-        if args.lcb_drop_margin is None
+        if getattr(args, "lcb_drop_margin", None) is None
         else float(args.lcb_drop_margin)
     )
 
@@ -180,7 +195,7 @@ def finalize_options(args):
 
 
 def build_lcb_model(args):
-    """Build standard Sim-DETR model and install LCB controls on the criterion."""
+    """Build standard Sim-DETR model and install LCB Acquire -> Preserve controls on the criterion."""
     from sim_detr.model import build_model
 
     model, criterion = build_model(args)
@@ -192,7 +207,8 @@ def build_lcb_model(args):
         install_layer_consistent_binding_control(
             criterion,
             capture,
-            layer_bind_coef=args.lcb_layer_bind_coef,
+            d1_bind_coef=args.lcb_d1_bind_coef,
+            late_bind_coef=args.lcb_late_bind_coef,
             owner_cons_coef=args.lcb_owner_cons_coef,
             drop_coef=args.lcb_drop_coef,
             drop_margin=args.lcb_drop_margin,
@@ -203,7 +219,8 @@ def build_lcb_model(args):
         install_layer_consistent_binding_control(
             criterion,
             capture,
-            layer_bind_coef=args.lcb_layer_bind_coef,
+            d1_bind_coef=args.lcb_d1_bind_coef,
+            late_bind_coef=0.0,
             owner_cons_coef=0.0,
             drop_coef=0.0,
             drop_margin=args.lcb_drop_margin,
@@ -236,7 +253,8 @@ def run(args):
         "max_es_cnt": args.max_es_cnt,
         "vtc_loss_coef": getattr(args, "VTC_loss_coef", getattr(args, "vtc_loss_coef", 0.3)),
         "ctc_loss_coef": getattr(args, "CTC_loss_coef", getattr(args, "ctc_loss_coef", 0.5)),
-        "layer_bind_coef": args.lcb_layer_bind_coef,
+        "d1_bind_coef": args.lcb_d1_bind_coef,
+        "late_bind_coef": args.lcb_late_bind_coef,
         "owner_cons_coef": args.lcb_owner_cons_coef,
         "drop_coef": args.lcb_drop_coef,
         "drop_margin": args.lcb_drop_margin,

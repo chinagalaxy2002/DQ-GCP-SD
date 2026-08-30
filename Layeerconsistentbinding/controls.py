@@ -1,15 +1,22 @@
-"""Runtime controls and loss functions for Layer-Consistent Binding (LCB-Full).
+"""Runtime controls and loss functions for Layer-Consistent Binding (LCB Acquire -> Preserve).
 
-This module implements training-only supervision on Sim-DETR's native decoder
-cross-attention across layers D1–D4:
-1. All-layer matched binding loss (L_layer_bind): supervises the attention mass
-   of the final Hungarian-matched queries on their corresponding GT occurrences
-   across all decoder layers (D1 to D4).
-2. Occurrence-level consistency loss (L_owner_cons): computes occurrence-level
-   distributions (K GT occurrences + background) and penalizes drift from D1
-   using Jensen-Shannon divergence with stopgrad on D1.
-3. Anti-washout loss (L_drop): hinge loss preventing matched occurrence mass in
-   subsequent layers (D2–D4) from dropping below D1's mass by more than a margin.
+This module implements the two-stage 'Acquire -> Preserve' objective for Sim-DETR:
+1. D1 Ownership Acquisition (L_D1-bind, coef=0.5):
+   Supervises D1 native cross-attention on final Hungarian-matched GT occurrences,
+   matching the verified NativeBind learning signal:
+   L_D1-bind = - 1/|M| sum_{(j,k)} log(m_jk^(1) + eps)
+
+2. D2–D4 Direct Ownership Maintenance (L_late-bind, coef=0.1):
+   Directly supervises D2–D4 cross-attentions to prevent subsequent layers from losing the GT:
+   L_late-bind = - 1/(3|M|) sum_{l=2}^4 sum_{(j,k)} log(m_jk^(l) + eps)
+
+3. D1 -> D2–D4 Ownership Consistency (L_owner-cons, coef=0.1):
+   Penalizes occurrence-identity drift from D1 anchor to D2–D4 using Jensen-Shannon divergence:
+   L_owner-cons = 1/(3|M|) sum_{l=2}^4 sum_{(j,k)} JS(stopgrad(p_j^(1)), p_j^(l))
+
+4. Anti-Washout Protection (L_drop, coef=0.1, margin=0.05):
+   Hinge loss preventing matched occurrence mass in D2–D4 from decaying below D1:
+   L_drop = 1/(3|M|) sum_{l=2}^4 sum_{(j,k)} [ m_jk^(1) - m_jk^(l) - 0.05 ]_+^2
 """
 
 from __future__ import annotations
@@ -97,7 +104,7 @@ def compute_layer_consistent_binding_losses(
     drop_margin: float = 0.05,
     detach_d1_in_drop: bool = True,
 ) -> Dict[str, Tensor]:
-    """Compute the three LCB loss terms across decoder layers.
+    """Compute the decoupled 'Acquire -> Preserve' LCB loss terms.
 
     Args:
         attentions: List of attention tensors [B, Q, T] for each decoder layer.
@@ -111,11 +118,11 @@ def compute_layer_consistent_binding_losses(
 
     Returns:
         Dict with keys:
-        - 'loss_lcb_layer_bind': All-layer matched binding loss.
-        - 'loss_lcb_owner_cons': Occurrence-level consistency loss.
-        - 'loss_lcb_drop': Anti-washout hinge loss.
+        - 'loss_lcb_d1_bind': D1 ownership acquisition loss.
+        - 'loss_lcb_late_bind': D2–D4 direct ownership maintenance loss.
+        - 'loss_lcb_owner_cons': D1 -> D2–D4 occurrence-level consistency loss.
+        - 'loss_lcb_drop': D1 -> D2–D4 anti-washout hinge loss.
     """
-    # Create zero tensor connected to gradient graph if prerequisites not met
     ref_tensor = outputs["pred_logits"] if "pred_logits" in outputs else None
     if ref_tensor is None:
         for att in attentions:
@@ -125,7 +132,8 @@ def compute_layer_consistent_binding_losses(
     zero = ref_tensor.sum() * 0.0 if ref_tensor is not None else torch.tensor(0.0)
 
     empty_result = {
-        "loss_lcb_layer_bind": zero,
+        "loss_lcb_d1_bind": zero,
+        "loss_lcb_late_bind": zero,
         "loss_lcb_owner_cons": zero,
         "loss_lcb_drop": zero,
     }
@@ -138,7 +146,6 @@ def compute_layer_consistent_binding_losses(
     ):
         return empty_result
 
-    # Filter available requested layers
     active_layer_indices = [
         idx for idx in layers if idx < len(attentions) and attentions[idx] is not None
     ]
@@ -150,17 +157,13 @@ def compute_layer_consistent_binding_losses(
     dtype = attentions[active_layer_indices[0]].dtype
     eps = torch.finfo(dtype).eps
 
-    # Normalize attention per layer
     norm_attentions: Dict[int, Tensor] = {}
     for idx in active_layer_indices:
         att = attentions[idx]
         if att is not None:
             norm_attentions[idx] = normalize_cross_attention(att, video_mask, eps=eps)
 
-    # We require layer 0 (D1) for consistency and drop losses
     has_d1 = 0 in norm_attentions
-
-    # Collect per-sample mass and distributions
     masses_by_layer: Dict[int, List[Tensor]] = {idx: [] for idx in active_layer_indices}
     p_by_layer: Dict[int, List[Tensor]] = {idx: [] for idx in active_layer_indices}
 
@@ -185,7 +188,6 @@ def compute_layer_consistent_binding_losses(
         if num_gt == 0:
             continue
 
-        # Overlap mask for all GT occurrences in this video: [num_gt, valid_length]
         overlap = _overlap_for_targets(
             spans,
             valid_length,
@@ -194,9 +196,7 @@ def compute_layer_consistent_binding_losses(
             device=device,
         )
 
-        # Background mask: clips not in any GT occurrence [1, valid_length]
         bg_mask = (~overlap.any(dim=0, keepdim=True)).to(dtype)
-        # Full category masks: [num_gt + 1, valid_length]
         masks_with_bg = torch.cat([overlap.to(dtype), bg_mask], dim=0)
 
         num_matches_sample = len(src_indices)
@@ -204,44 +204,46 @@ def compute_layer_consistent_binding_losses(
 
         for layer_idx in active_layer_indices:
             att = norm_attentions[layer_idx]
-            # Matched query attention: [num_matches, valid_length]
             matched_att = att[batch_index, src_indices, :valid_length]
 
-            # Attention mass on each bin (K GT occurrences + 1 background): [num_matches, num_gt + 1]
             dist_raw = torch.matmul(matched_att, masks_with_bg.t())
-
-            # Distribution normalized across occurrences + bg
             dist_norm = dist_raw / dist_raw.sum(dim=-1, keepdim=True).clamp_min(eps)
             p_by_layer[layer_idx].append(dist_norm)
 
-            # Attention mass on matched GT occurrence: [num_matches]
-            # tgt_indices contains the matched GT index (0 .. num_gt-1) for each matched query
             matched_mass = dist_raw[torch.arange(num_matches_sample, device=device), tgt_indices]
             masses_by_layer[layer_idx].append(matched_mass)
 
     if num_total_matches == 0:
         return empty_result
 
-    # 1. All-layer matched binding loss (L_layer_bind)
-    # L_layer_bind = - 1/(L * |M|) sum_{l=1}^L sum_{(j,k)} log(m_jk^(l) + eps)
-    layer_bind_terms: List[Tensor] = []
-    for layer_idx in active_layer_indices:
-        m_layer = torch.cat(masses_by_layer[layer_idx], dim=0)
-        layer_bind_terms.append(-m_layer.clamp_min(eps).log().mean())
+    # 1. D1 Ownership Acquisition Loss (L_D1-bind)
+    # L_D1-bind = - 1/|M| sum_{(j,k)} log(m_jk^(1) + eps)
+    loss_d1_bind = zero
+    if has_d1 and masses_by_layer[0]:
+        m1_all = torch.cat(masses_by_layer[0], dim=0)
+        loss_d1_bind = -m1_all.clamp_min(eps).log().mean()
 
-    loss_layer_bind = torch.stack(layer_bind_terms).mean() if layer_bind_terms else zero
+    # 2. D2–D4 Direct Ownership Maintenance Loss (L_late-bind)
+    # L_late-bind = - 1/(3|M|) sum_{l=2}^4 sum_{(j,k)} log(m_jk^(l) + eps)
+    loss_late_bind = zero
+    subsequent_layers = [idx for idx in active_layer_indices if idx > 0]
+    if subsequent_layers:
+        late_bind_terms: List[Tensor] = []
+        for layer_idx in subsequent_layers:
+            if masses_by_layer[layer_idx]:
+                ml_all = torch.cat(masses_by_layer[layer_idx], dim=0)
+                late_bind_terms.append(-ml_all.clamp_min(eps).log().mean())
+        if late_bind_terms:
+            loss_late_bind = torch.stack(late_bind_terms).mean()
 
-    # 2. Occurrence-level consistency loss (L_owner_cons)
+    # 3. D1 -> D2–D4 Occurrence-Level Consistency Loss (L_owner-cons)
     # JS divergence between stopgrad(p^(1)) and p^(l) for l in {2, 3, 4}
     loss_owner_cons = zero
-    subsequent_layers = [idx for idx in active_layer_indices if idx > 0]
-
     if has_d1 and subsequent_layers and p_by_layer[0]:
         cons_layer_terms: List[Tensor] = []
         for layer_idx in subsequent_layers:
             js_sample_list: List[Tensor] = []
             for sample_p1, sample_pl in zip(p_by_layer[0], p_by_layer[layer_idx]):
-                # Stopgrad on D1 anchor distribution
                 p1_anchor = sample_p1.detach()
                 js = js_divergence(p1_anchor, sample_pl, eps=eps)
                 js_sample_list.append(js)
@@ -250,7 +252,7 @@ def compute_layer_consistent_binding_losses(
         if cons_layer_terms:
             loss_owner_cons = torch.stack(cons_layer_terms).mean()
 
-    # 3. Anti-washout loss (L_drop)
+    # 4. Anti-Washout Loss (L_drop)
     # [ m^(1)_jk - m^(l)_jk - delta ]_+^2 for l in {2, 3, 4}
     loss_drop = zero
     if has_d1 and subsequent_layers and masses_by_layer[0]:
@@ -260,15 +262,17 @@ def compute_layer_consistent_binding_losses(
 
         drop_layer_terms: List[Tensor] = []
         for layer_idx in subsequent_layers:
-            ml_all = torch.cat(masses_by_layer[layer_idx], dim=0)
-            diff = m1_all - ml_all - float(drop_margin)
-            drop_penalty = F.relu(diff).pow(2)
-            drop_layer_terms.append(drop_penalty.mean())
+            if masses_by_layer[layer_idx]:
+                ml_all = torch.cat(masses_by_layer[layer_idx], dim=0)
+                diff = m1_all - ml_all - float(drop_margin)
+                drop_penalty = F.relu(diff).pow(2)
+                drop_layer_terms.append(drop_penalty.mean())
         if drop_layer_terms:
             loss_drop = torch.stack(drop_layer_terms).mean()
 
     return {
-        "loss_lcb_layer_bind": loss_layer_bind,
+        "loss_lcb_d1_bind": loss_d1_bind,
+        "loss_lcb_late_bind": loss_late_bind,
         "loss_lcb_owner_cons": loss_owner_cons,
         "loss_lcb_drop": loss_drop,
     }
@@ -278,31 +282,25 @@ def install_layer_consistent_binding_control(
     criterion: nn.Module,
     attention_capture: Any,
     *,
-    layer_bind_coef: float = 0.5,
+    d1_bind_coef: float = 0.5,
+    late_bind_coef: float = 0.1,
     owner_cons_coef: float = 0.1,
     drop_coef: float = 0.1,
     drop_margin: float = 0.05,
     layers: Sequence[int] = (0, 1, 2, 3),
     detach_d1_in_drop: bool = True,
 ) -> None:
-    """Install Layer-Consistent Binding loss control on a Sim-DETR criterion.
+    """Install 'Acquire -> Preserve' Layer-Consistent Binding control on criterion.
 
-    This wraps the criterion's forward method to capture native cross-attentions
-    from D1 to D4, compute the three LCB loss terms using final D4 Hungarian
-    matches, and register the corresponding loss weights.
-
-    Args:
-        criterion: Sim-DETR SetCriterion instance.
-        attention_capture: NativeCrossAttentionCapture instance.
-        layer_bind_coef: Weight for L_layer_bind (default: 0.5).
-        owner_cons_coef: Weight for L_owner_cons (default: 0.1).
-        drop_coef: Weight for L_drop (default: 0.1).
-        drop_margin: Anti-washout margin delta (default: 0.05).
-        layers: Tuple of layer indices to supervise (default: (0, 1, 2, 3)).
-        detach_d1_in_drop: Whether to detach D1 anchor in drop loss (default: True).
+    Registers 4 decoupled loss weights:
+    - loss_lcb_d1_bind: 0.5 (D1 ownership acquisition)
+    - loss_lcb_late_bind: 0.1 (D2–D4 ownership maintenance)
+    - loss_lcb_owner_cons: 0.1 (D1 -> D2–D4 consistency)
+    - loss_lcb_drop: 0.1 (anti-washout hinge loss)
     """
     if getattr(criterion, "_lcb_control_installed", False):
-        criterion.weight_dict["loss_lcb_layer_bind"] = float(layer_bind_coef)
+        criterion.weight_dict["loss_lcb_d1_bind"] = float(d1_bind_coef)
+        criterion.weight_dict["loss_lcb_late_bind"] = float(late_bind_coef)
         criterion.weight_dict["loss_lcb_owner_cons"] = float(owner_cons_coef)
         criterion.weight_dict["loss_lcb_drop"] = float(drop_coef)
         criterion._lcb_attention_capture = attention_capture
@@ -326,7 +324,8 @@ def install_layer_consistent_binding_control(
         attentions = attention_capture.get()
         if not attentions or targets is None:
             zero = outputs["pred_logits"].sum() * 0.0
-            losses["loss_lcb_layer_bind"] = zero
+            losses["loss_lcb_d1_bind"] = zero
+            losses["loss_lcb_late_bind"] = zero
             losses["loss_lcb_owner_cons"] = zero
             losses["loss_lcb_drop"] = zero
             return losses
@@ -337,7 +336,7 @@ def install_layer_consistent_binding_control(
         }
         indices = self.matcher(final_outputs, targets)
 
-        # 4. Compute LCB-Full losses
+        # 4. Compute Acquire -> Preserve LCB losses
         lcb_losses = compute_layer_consistent_binding_losses(
             attentions,
             outputs,
@@ -352,7 +351,8 @@ def install_layer_consistent_binding_control(
         return losses
 
     criterion.forward = MethodType(controlled_forward, criterion)
-    criterion.weight_dict["loss_lcb_layer_bind"] = float(layer_bind_coef)
+    criterion.weight_dict["loss_lcb_d1_bind"] = float(d1_bind_coef)
+    criterion.weight_dict["loss_lcb_late_bind"] = float(late_bind_coef)
     criterion.weight_dict["loss_lcb_owner_cons"] = float(owner_cons_coef)
     criterion.weight_dict["loss_lcb_drop"] = float(drop_coef)
     criterion._lcb_original_forward = original_forward
@@ -370,9 +370,14 @@ def remove_layer_consistent_binding_control(criterion: nn.Module) -> None:
         criterion.forward = original
         delattr(criterion, "_lcb_original_forward")
 
-    criterion.weight_dict.pop("loss_lcb_layer_bind", None)
-    criterion.weight_dict.pop("loss_lcb_owner_cons", None)
-    criterion.weight_dict.pop("loss_lcb_drop", None)
+    for key in (
+        "loss_lcb_d1_bind",
+        "loss_lcb_late_bind",
+        "loss_lcb_owner_cons",
+        "loss_lcb_drop",
+        "loss_lcb_layer_bind",
+    ):
+        criterion.weight_dict.pop(key, None)
 
     for attr in (
         "_lcb_attention_capture",

@@ -101,16 +101,19 @@ class TestLCBControls(unittest.TestCase):
             drop_margin=0.05,
         )
 
-        self.assertIn("loss_lcb_layer_bind", losses)
+        self.assertIn("loss_lcb_d1_bind", losses)
+        self.assertIn("loss_lcb_late_bind", losses)
         self.assertIn("loss_lcb_owner_cons", losses)
         self.assertIn("loss_lcb_drop", losses)
 
         # When attention perfectly matches and is identical across layers:
-        # 1. m_jk = 1.0 for all queries and layers -> L_layer_bind = -log(1.0) = 0.0
-        self.assertAlmostEqual(float(losses["loss_lcb_layer_bind"].item()), 0.0, places=5)
-        # 2. p(D1) == p(D2..D4) -> L_owner_cons = 0.0
+        # 1. m_jk = 1.0 for all queries and layers -> L_D1-bind = -log(1.0) = 0.0
+        self.assertAlmostEqual(float(losses["loss_lcb_d1_bind"].item()), 0.0, places=5)
+        # 2. L_late-bind = -log(1.0) = 0.0
+        self.assertAlmostEqual(float(losses["loss_lcb_late_bind"].item()), 0.0, places=5)
+        # 3. p(D1) == p(D2..D4) -> L_owner_cons = 0.0
         self.assertAlmostEqual(float(losses["loss_lcb_owner_cons"].item()), 0.0, places=5)
-        # 3. m(D1) == m(D2..D4) -> diff = -0.05 <= 0 -> L_drop = 0.0
+        # 4. m(D1) == m(D2..D4) -> diff = -0.05 <= 0 -> L_drop = 0.0
         self.assertAlmostEqual(float(losses["loss_lcb_drop"].item()), 0.0, places=5)
 
     def test_d1_stopgrad_in_consistency_loss(self):
@@ -202,7 +205,8 @@ class TestLCBControls(unittest.TestCase):
             span_loss_type="l1",
         )
         total_loss = (
-            losses["loss_lcb_layer_bind"]
+            losses["loss_lcb_d1_bind"]
+            + losses["loss_lcb_late_bind"]
             + losses["loss_lcb_owner_cons"]
             + losses["loss_lcb_drop"]
         )
@@ -237,16 +241,19 @@ class TestLCBControls(unittest.TestCase):
         install_layer_consistent_binding_control(
             criterion,
             capture,
-            layer_bind_coef=0.5,
+            d1_bind_coef=0.5,
+            late_bind_coef=0.1,
             owner_cons_coef=0.1,
             drop_coef=0.1,
             layers=(0, 1),
         )
 
-        self.assertIn("loss_lcb_layer_bind", criterion.weight_dict)
+        self.assertIn("loss_lcb_d1_bind", criterion.weight_dict)
+        self.assertIn("loss_lcb_late_bind", criterion.weight_dict)
         self.assertIn("loss_lcb_owner_cons", criterion.weight_dict)
         self.assertIn("loss_lcb_drop", criterion.weight_dict)
-        self.assertEqual(criterion.weight_dict["loss_lcb_layer_bind"], 0.5)
+        self.assertEqual(criterion.weight_dict["loss_lcb_d1_bind"], 0.5)
+        self.assertEqual(criterion.weight_dict["loss_lcb_late_bind"], 0.1)
 
         outputs = {
             "pred_logits": torch.zeros(1, 1, 2),
@@ -256,15 +263,17 @@ class TestLCBControls(unittest.TestCase):
 
         out_losses = criterion(outputs, targets)
         self.assertIn("loss_base", out_losses)
-        self.assertIn("loss_lcb_layer_bind", out_losses)
+        self.assertIn("loss_lcb_d1_bind", out_losses)
+        self.assertIn("loss_lcb_late_bind", out_losses)
         self.assertIn("loss_lcb_owner_cons", out_losses)
         self.assertIn("loss_lcb_drop", out_losses)
 
         # Removal
         remove_layer_consistent_binding_control(criterion)
-        self.assertNotIn("loss_lcb_layer_bind", criterion.weight_dict)
+        self.assertNotIn("loss_lcb_d1_bind", criterion.weight_dict)
+        self.assertNotIn("loss_lcb_late_bind", criterion.weight_dict)
         out_losses_clean = criterion(outputs, targets)
-        self.assertNotIn("loss_lcb_layer_bind", out_losses_clean)
+        self.assertNotIn("loss_lcb_d1_bind", out_losses_clean)
 
 
 if __name__ == "__main__":
