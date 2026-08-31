@@ -10,6 +10,20 @@
     "num_records": 1542,
     "total_matched_trajectories": 2691
   },
+  "formal_metrics": {
+    "final_decoder_layer": "d4",
+    "MR-full-R1@0.5": 66.73,
+    "MR-full-R1@0.7": 51.04,
+    "MR-full-mAP@0.5": 67.83,
+    "MR-full-mAP@0.75": 47.98,
+    "MR-full-mAP": 47.25,
+    "HL-min-Fair-mAP": 77.13,
+    "HL-min-Fair-Hit1": 78.15,
+    "HL-min-Good-mAP": 66.05,
+    "HL-min-Good-Hit1": 76.33,
+    "HL-min-VeryGood-mAP": 39.88,
+    "HL-min-VeryGood-Hit1": 64.14
+  },
   "layers": {
     "d1": {"aec": 0.9528341362485331, "binding_margin": 0.7846223502536653, "ecr": 0.1345028422327835, "own_mass": 0.8156768505011217},
     "d2": {"aec": 0.9529224054515884, "binding_margin": 0.7118350825586365, "ecr": 0.15398067902960272, "own_mass": 0.7459093741066615},

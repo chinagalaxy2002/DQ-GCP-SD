@@ -81,6 +81,24 @@ $$L = L_{\text{Sim-DETR}} + 0.5 \cdot L_{\text{D1-bind}} + 0.1 \cdot L_{\text{la
 - Training script: `bash Layeerconsistentbinding/scripts/run_train_lcb.sh`
 - Evaluation script: `bash Layeerconsistentbinding/scripts/run_eval_lcb.sh <checkpoint> <test_jsonl> <output_dir>`
 
+#### LCB Full Results (seed 2017)
+
+The `lcb_full` checkpoint was selected at epoch 144 using validation
+MR-full-mAP (`49.19`). Test results were computed only after this
+validation-based selection. The full, versioned artifact record—including the
+configuration, logs, validation predictions, D1–D4 test submissions, and
+ownership analysis—is available in
+[`Layeerconsistentbinding/results/lcb_full_seed2017`](Layeerconsistentbinding/results/lcb_full_seed2017/).
+
+| Split / final decoder layer | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | mAP Avg. | HL-min-Fair mAP / Hit@1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Validation / D4 | 68.13 | 53.35 | 69.13 | 50.82 | **49.19** | 77.55 / 79.74 |
+| Test / D4 | 66.73 | 51.04 | 67.83 | 47.98 | 47.25 | 77.13 / 78.15 |
+
+The test ownership analysis covers 1,542 records and 2,691 matched
+trajectories. D1 → D4 persistence is `0.9788`, while the D1 → D4
+washout-drop rate is `0.2404`.
+
 ### Exploratory DQ-CGP variants on test
 
 | Method | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | mAP Avg. |
