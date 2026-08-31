@@ -109,3 +109,11 @@ Run the self-contained test suite:
 ```bash
 python -m unittest discover -s Layeerconsistentbinding/tests
 ```
+
+## 4. Published Run Record
+
+The configuration, metrics, logs, validation predictions, and layer-wise test
+submissions for the full seed-2017 run are versioned in
+[`results/lcb_full_seed2017`](results/lcb_full_seed2017/). Large checkpoints,
+TensorBoard events, and redundant per-record analysis are intentionally excluded
+from the repository.

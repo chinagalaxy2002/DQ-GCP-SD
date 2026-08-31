@@ -1,0 +1,20 @@
+{
+  "variant": "lcb_full",
+  "description": "Layer-Consistent Binding Acquire -> Preserve on native D1–D4 Sim-DETR attention",
+  "seed": 2017,
+  "decoder_layers": 4,
+  "encoder_layers": 2,
+  "batch_size": 32,
+  "lr": 0.0001,
+  "lr_drop": 100,
+  "max_es_cnt": 200,
+  "vtc_loss_coef": 0.3,
+  "ctc_loss_coef": 0.5,
+  "d1_bind_coef": 0.5,
+  "late_bind_coef": 0.1,
+  "owner_cons_coef": 0.1,
+  "drop_coef": 0.1,
+  "drop_margin": 0.05,
+  "native_mode": "layer_consistent",
+  "checkpoint_selection": "val MR-full-mAP"
+}

@@ -1,0 +1,32 @@
+{
+  "source": "outputs/lcb_full_seed2017/eval_test/lcb_analysis.json",
+  "checkpoint": {
+    "selection_epoch": 144,
+    "selection_metric": "MR-full-mAP",
+    "selection_metric_value": 49.19
+  },
+  "evaluation": {
+    "split": "test",
+    "num_records": 1542,
+    "total_matched_trajectories": 2691
+  },
+  "layers": {
+    "d1": {"aec": 0.9528341362485331, "binding_margin": 0.7846223502536653, "ecr": 0.1345028422327835, "own_mass": 0.8156768505011217},
+    "d2": {"aec": 0.9529224054515884, "binding_margin": 0.7118350825586365, "ecr": 0.15398067902960272, "own_mass": 0.7459093741066615},
+    "d3": {"aec": 0.9518909682333807, "binding_margin": 0.7317137122365475, "ecr": 0.1592162892554282, "own_mass": 0.7645608259723451},
+    "d4": {"aec": 0.9555447470817122, "binding_margin": 0.7775199864554242, "ecr": 0.14798558692883548, "own_mass": 0.8071915884918783}
+  },
+  "persistence": {
+    "d1_correct_count": 2358,
+    "d1_correct_rate": 0.8762541806020067,
+    "d1_to_d2_persistence": 0.9754028837998303,
+    "d1_to_d2_mass_diff_mean": -0.06033472213021426,
+    "d1_to_d2_washout_drop_rate": 0.5053883314752879,
+    "d1_to_d3_persistence": 0.9703138252756573,
+    "d1_to_d3_mass_diff_mean": -0.03842491983066599,
+    "d1_to_d3_washout_drop_rate": 0.4377554812337421,
+    "d1_to_d4_persistence": 0.9787955894826124,
+    "d1_to_d4_mass_diff_mean": 0.005571049276281123,
+    "d1_to_d4_washout_drop_rate": 0.24043106651802304
+  }
+}
