@@ -239,7 +239,7 @@ intermediate best val MR-mAP is `29.45`, with no test result. At the
 2026-09-01 19:31 CST snapshot, the two-layer Soccer-GMR LS-DQ-CGP run was at
 epoch 88 (best val mAP `18.23` at epoch 57). The two-layer Full CSC run using
 D1-attention evidence plus binding 0.2 was at epoch 39 (best val mAP `15.97` at
-epoch 37); its later status is reported in the current-run section below.
+epoch 37); its completed result is reported in the current-run section below.
 
 by Jiajin Tang*, Zhengxuan Wei*, Yuchen Zhu, Cheng Shi, Guanbin Li, Liang Lin, Sibei Yang†
 
@@ -423,21 +423,27 @@ CUDA_VISIBLE_DEVICES=1 \
   --gmr_root /home/guoxiangyu/VLMbasedIter_momentretrival/generalized-moment-retrieval
 ```
 
-### Validation status (snapshot: 2026-09-01 21:53 CST)
+### Final training and evaluation status (completed 2026-09-01 22:00 CST)
 
-The job had completed epoch `191` and was still running. Checkpoint selection
-uses validation `mAP`; therefore the best checkpoint and the latest checkpoint
-are reported separately:
+The job completed `198` epochs and stopped by the configured validation
+patience of `50`. Checkpoint selection uses validation `mAP`; the
+validation-selected checkpoint is epoch `148`.
 
 | Checkpoint | Epoch | mAP | mR@1 | mR@3 | mR@5 | mIoU@1 | mIoU@3 | mIoU@5 | AUROC |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
 | Best validation checkpoint | 148 | **23.64** | **14.83** | **25.97** | **33.66** | **34.44** | **30.70** | **30.57** | **75.69** |
-| Latest completed epoch | 191 | 20.16 | 10.14 | 24.33 | 31.67 | 29.90 | 26.09 | 26.04 | 76.68 |
+| Final training epoch | 198 | 17.77 | 8.46 | 20.88 | 28.92 | 24.41 | 21.03 | 21.00 | 73.83 |
+| Test (best validation checkpoint) | 148 | 22.03 | 12.79 | 26.00 | 32.51 | 30.89 | 27.45 | 27.41 | 76.14 |
 
 The best checkpoint also obtains `G-mIoU@1/3/5 = 40.58 / 33.60 / 31.39`.
-At epoch 191, the corresponding values are `45.77 / 40.69 / 39.19`.
-The current run has no test-set result yet; test evaluation should be performed
-after training finishes and the validation-selected `model_best.ckpt` is fixed:
+The final training epoch obtains `G-mIoU@1/3/5 = 35.61 / 31.33 / 29.86`,
+and the test checkpoint obtains `38.42 / 32.59 / 30.74`. On the multi-moment
+test queries, `mR+@1/3/5 = 0.00 / 6.98 / 12.49` and
+`mIoU+@1/3/5 = 0.00 / 8.75 / 8.86`.
+
+The test metrics and predictions are available at
+`results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/test_best/`.
+The command used to reproduce the test evaluation is:
 
 ```bash
 CUDA_VISIBLE_DEVICES=1 PYTHONPATH="${PYTHONPATH:-}:$(pwd)" \
@@ -453,6 +459,5 @@ CUDA_VISIBLE_DEVICES=1 PYTHONPATH="${PYTHONPATH:-}:$(pwd)" \
 
 The local training history and validation metrics are stored under
 `results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/`. Large
-checkpoints and run outputs remain gitignored; the values above are the
-validation snapshot recorded in this README and are not presented as final
-test performance.
+checkpoints and run outputs remain gitignored; the values above are the final
+validation-selected and local test-with-GT results for this seed.
