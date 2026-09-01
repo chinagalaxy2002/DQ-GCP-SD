@@ -60,6 +60,72 @@ expanded diagnosis therefore remains a No-Go: candidate-context
 correspondence is not supported as the source of a retrieval improvement. See
 the [complete implementation, logs, occurrence-stratified tables, and reproduction guide](results_semantic_calibration/README.md).
 
+### Soccer-GMR: Candidate-Conditioned Semantic Calibration
+
+The repository also contains an isolated CSC implementation for Soccer-GMR
+Standard. It adds a late semantic residual after the native Sim-DETR decoder:
+
+$$
+p_i=\operatorname{masked\_softmax}(m_i^{native}),\quad
+v_i=\sum_t p_i(t)F_t,\quad
+e_i=\operatorname{LN}(e+g(e,v_i)),\quad
+\ell_{i,fg}'=\ell_{i,fg}^{native}+\gamma\,\operatorname{cos}(q_i,e_i).
+$$
+
+Only the final foreground logit is calibrated. The native decoder, temporal
+spans, masks, IoU scores, saliency, auxiliary outputs, matcher, and original
+Sim-DETR files remain unchanged. The Soccer-GMR adapter additionally applies
+null-aware candidate supervision because the dataset contains many null-set
+queries. See the [complete Soccer-GMR method and reproduction guide](sim_detr/soccer_gmr_csc/README.md).
+
+#### Soccer-GMR seed-2023 results
+
+All three methods use the same `bsz=8`, `lr=5e-5`, `mask_loss_coef=6`, null-aware
+loss settings, and seed 2023. Checkpoints are selected using validation mAP;
+test labels are used only for the final evaluation.
+
+| Method | Best val mAP | Test mAP | Test mR@1 | Test mR@3 | Test mR@5 | Test mIoU@1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Native Sim-DETR | 22.59 | 20.73 | 11.55 | 24.14 | 31.51 | 28.95 |
+| Static semantic calibration | **24.30** | **21.09** | **12.41** | **24.49** | 31.10 | **31.45** |
+| Candidate-conditioned calibration | 22.48 | 19.43 | 11.57 | 22.06 | 28.39 | 28.36 |
+
+Static calibration improves over Native by `+0.36` test mAP. The Full model
+does not exceed Static in this seed, so the experiment does not support an
+additional candidate-conditioned semantic gain on Soccer-GMR.
+
+#### Soccer-GMR Full-checkpoint counterfactuals
+
+The following interventions modify only the context used by the Full semantic
+residual while keeping native predictions fixed:
+
+| Intervention | Test mAP | Test mR@1 | Test mR@3 | Test mR@5 |
+| --- | ---: | ---: | ---: | ---: |
+| aligned | 19.43 | 11.57 | 22.06 | 28.39 |
+| roll-1 | 18.83 | 10.48 | 21.92 | 28.08 |
+| roll-2 | 19.48 | 11.68 | 21.77 | 28.49 |
+| roll-3 | 19.23 | 11.40 | 21.61 | 27.87 |
+| random derangement | 19.02 | 10.86 | 21.62 | 28.26 |
+| farthest context | 19.53 | 11.84 | 21.95 | 28.30 |
+| uniform context | 19.34 | 11.40 | 22.08 | 28.35 |
+| static semantics | 19.47 | 11.61 | 21.93 | 28.19 |
+| native bypass | 19.38 | 11.42 | 22.08 | 28.28 |
+
+The Full checkpoint shows only weak sensitivity to candidate-context
+correspondence: roll-1 drops by `0.60` mAP, while the other interventions stay
+close to aligned. The implementation and scripts are located in
+`sim_detr/soccer_gmr_csc/` and `sim_detr/semantic_calibration/`, including:
+
+```bash
+# Launch Native, Static, and Full in tmux on two GPUs.
+SOCCER_GMR_RUN_TAG=nullaware_maskloss6_bsz8 \
+bash sim_detr/soccer_gmr_csc/scripts/train_all_tmux.sh 2023
+
+# Evaluate Full with aligned/rolled/random/farthest/uniform/static/native controls.
+bash sim_detr/soccer_gmr_csc/scripts/run_counterfactuals.sh \
+  results_soccer_gmr_csc/full_nullaware_maskloss6_bsz8_seed2023/model_best.ckpt 0 test
+```
+
 ### Completed Native Hungarian Binding control
 
 We also completed a parameter-free control that supervises only Sim-DETR's
