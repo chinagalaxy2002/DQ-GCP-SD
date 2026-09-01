@@ -18,6 +18,7 @@ data/
 *.log
 *.log.txt
 results_dq_cgp/
+results_ls_dq_cgp/
 results_soccer_gmr_csc/
 layerwise_ownership_outputs/
 Layeerconsistentbinding/outputs/
