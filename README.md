@@ -1,24 +1,36 @@
 # [ICCV2025] Sim-DETR: Unlock DETR for Temporal Sentence Grounding
 
+> **Experiment inventory.** A reconciled record of completed, diagnostic,
+> interrupted, and running experiments is available in
+> [EXPERIMENT_RESULTS.md](EXPERIMENT_RESULTS.md), with a
+> [machine-readable snapshot](results/experiment_inventory_2026_09_01.json).
+> It also documents metric provenance and prevents intermediate runs from being
+> cited as final results.
+
 ## DQ-CGP V3 (D1) extension
 
 This repository includes the complete DQ-CGP implementation for
 QVHighlights. DQ-CGP performs candidate-specific temporal binding, basis
-routing, and feature refinement for each native DETR query. The selected V3
-configuration inserts DQ-CGP once between decoder layers D1 and D2 and is
-trained from scratch under the same protocol as the Sim-DETR baseline.
+routing, and feature refinement for each native DETR query. The pre-designated
+V3 release configuration inserts DQ-CGP once between decoder layers D1 and D2
+and is trained from scratch under the same protocol as the Sim-DETR baseline.
 
 - Complete training and evaluation guide: [sim_detr/dq_cgp/README.md](sim_detr/dq_cgp/README.md)
 - Released checkpoint: [DQ-CGP V3 (D1) release](https://github.com/chinagalaxy2002/DQ-GCP-SD/releases/tag/v3-d1-qvhighlights)
-- Selection metric: validation `MR-full-mAP`, without using test GT for model selection
+- Within-run checkpoint selection: validation `MR-full-mAP`
 
 ### QVHighlights results
 
 | Method | test R1@0.5 | test R1@0.7 | test mAP@0.5 | test mAP@0.75 | test mAP Avg. | val R1@0.5 | val R1@0.7 | val mAP@0.5 | val mAP@0.75 | val mAP Avg. |
 | ------ | ----------: | ----------: | -----------: | ------------: | ------------: | ---------: | ---------: | ----------: | -----------: | -----------: |
-| Sim-DETR baseline | 66.93 | **51.56** | 67.75 | 48.89 | 47.60 | **68.32** | 53.81 | **69.03** | 50.77 | 49.14 |
+| Sim-DETR baseline (standard evaluator) | 66.93 | **51.56** | 67.75 | 48.89 | 47.60 | **68.32** | 53.81 | **69.03** | 50.77 | 49.14 |
 | **DQ-CGP V3 (D1)** | **67.96** | 51.36 | **68.94** | **49.01** | **48.06** | 67.81 | **54.06** | 68.81 | **51.01** | **49.66** |
 | Improvement | +1.03 | -0.20 | +1.19 | +0.12 | **+0.46** | -0.51 | +0.25 | -0.22 | +0.24 | **+0.52** |
+
+The causal attention-capture evaluator produces slightly different saved-test
+values for the same baseline/DQ checkpoints (`47.58/48.04` MR mAP). Deltas
+must be computed within one evaluation path; the two paths are documented in
+the [consolidated experiment record](EXPERIMENT_RESULTS.md#evaluation-provenance).
 
 The released V3 checkpoint was selected at epoch 103. Its main parameters are
 seed 2017, `beta=0.05`, binding-loss coefficient `0.20`, routing-loss
@@ -204,6 +216,30 @@ washout-drop rate is `0.2404`.
 | DQ-CGP tied dual | 66.15 | 50.26 | 67.21 | 47.67 | 46.88 |
 | DQ-CGP dual independent | 66.21 | 51.36 | 67.21 | 47.76 | 46.85 |
 | DQ-CGP tied all | 66.21 | 49.81 | 67.30 | 47.10 | 46.80 |
+
+These are post-training exploratory test comparisons: all nine completed grid
+configurations were evaluated on the local test-with-GT split. The grid's
+highest validation score is `50.02` for `beta=0.100, bind=0.40, route=0.005`,
+whereas the pre-designated V3 configuration has the highest test MR mAP
+(`48.06`). V3 should therefore not be described as the validation winner of
+the later grid. Full validation and test values are listed in
+[EXPERIMENT_RESULTS.md](EXPERIMENT_RESULTS.md#dq-cgp-screening-grid).
+
+#### Inference-time beta sweep
+
+Changing only the trained V3 checkpoint's residual coefficient gives val
+MR-mAP `49.59/49.66/49.53/49.45` at beta `0/0.05/0.10/0.20`. A wider sweep
+decreases from `49.16` at beta `0.5` to `47.20` at beta `3.0`. This is a
+fixed-checkpoint sensitivity diagnostic, not independent retraining.
+
+### Incomplete and running experiments
+
+The QVHighlights two-layer LS-DQ-CGP run stopped after eight logged epochs; its
+intermediate best val MR-mAP is `29.45`, with no test result. At the
+2026-09-01 19:31 CST snapshot, the two-layer Soccer-GMR LS-DQ-CGP run was at
+epoch 88 (best val mAP `18.23` at epoch 57), and the two-layer Full CSC run
+using D1-attention evidence plus binding 0.2 was at epoch 39 (best val mAP
+`15.97` at epoch 37). These values are not final results.
 
 by Jiajin Tang*, Zhengxuan Wei*, Yuchen Zhu, Cheng Shi, Guanbin Li, Liang Lin, Sibei Yang†
 

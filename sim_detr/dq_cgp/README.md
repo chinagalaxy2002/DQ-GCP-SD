@@ -16,7 +16,7 @@ sha256sum checkpoints/model_best.ckpt
 
 | Method | test R1@0.5 | test R1@0.7 | test mAP@0.5 | test mAP@0.75 | test mAP Avg. | val R1@0.5 | val R1@0.7 | val mAP@0.5 | val mAP@0.75 | val mAP Avg. |
 | ------ | ----------: | ----------: | -----------: | ------------: | ------------: | ---------: | ---------: | ----------: | -----------: | -----------: |
-| Sim-DETR baseline | 66.93 | **51.56** | 67.75 | 48.89 | 47.60 | **68.32** | 53.81 | **69.03** | 50.77 | 49.14 |
+| Sim-DETR baseline (standard evaluator) | 66.93 | **51.56** | 67.75 | 48.89 | 47.60 | **68.32** | 53.81 | **69.03** | 50.77 | 49.14 |
 | **DQ-CGP V3 (D1)** | **67.96** | 51.36 | **68.94** | **49.01** | **48.06** | 67.81 | **54.06** | 68.81 | **51.01** | **49.66** |
 | Improvement | +1.03 | -0.20 | +1.19 | +0.12 | **+0.46** | -0.51 | +0.25 | -0.22 | +0.24 | **+0.52** |
 
@@ -24,6 +24,18 @@ The baseline and DQ-CGP use the same QVHighlights splits, offline features,
 seed, optimizer, and 200-epoch training budget. Validation is used for
 checkpoint selection; `highlight_test_with_gt.jsonl` is evaluated only after
 selection.
+
+V3 was the pre-designated release configuration and its epoch-103 checkpoint
+was selected by validation within that run. A later exploratory nine-point
+grid evaluated every completed configuration on the local test-with-GT split;
+its highest validation configuration is not V3. See the
+[consolidated experiment record](../../EXPERIMENT_RESULTS.md#dq-cgp-screening-grid)
+for the complete grid and the distinction between release selection and the
+later exploratory comparisons.
+
+The causal attention-capture analysis reports `47.58/48.04` baseline/DQ test
+MR-mAP rather than the standard evaluator's `47.60/48.06`. These small
+cross-pipeline differences should not be mixed in one delta.
 
 Run all commands from the repository root. The scripts resolve the repository
 and data paths automatically. Use `PYTHON_BIN` when the desired Python is not

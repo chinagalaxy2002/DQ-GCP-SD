@@ -92,3 +92,11 @@ a GMR dataset adapter that includes empty video-query pairs and existence labels
 The suite uses only Python's standard test runner and covers the CGP equations,
 stop-gradient, attention masking, binding coordinates,
 counterfactuals, two-layer enforcement, state-dict cleanliness and gradients.
+
+## Local run status
+
+The seed-2017 QVHighlights scratch run present locally is incomplete. It
+finished eight logged epochs and stopped while starting the ninth. The best
+intermediate validation result is MR-full-mAP `29.45` at the seventh
+evaluation; no test evaluation was run. This number is retained for run
+accounting only and must not be compared with completed 200-epoch results.

@@ -1,0 +1,67 @@
+{
+  "snapshot": {
+    "time": "2026-09-01 19:31:45 CST",
+    "git_commit": "29e9e19992b7cc51c970c800e77c2e19f712dac9",
+    "report": "EXPERIMENT_RESULTS.md"
+  },
+  "reporting_notes": {
+    "seed_policy": "QVHighlights uses seed 2017 and Soccer-GMR uses seed 2023; no multi-seed claim",
+    "qv_test_metric_paths": {
+      "standard_submission_evaluator": {
+        "baseline_mr_map": 47.60,
+        "dq_cgp_v3_mr_map": 48.06
+      },
+      "causal_attention_analyzer": {
+        "baseline_mr_map": 47.58,
+        "dq_cgp_active_mr_map": 48.04
+      }
+    },
+    "warning": "Compute comparisons within one evaluation path; do not mix the two baseline values."
+  },
+  "qvhighlights_completed": [
+    {"method": "Sim-DETR baseline", "val_mr_map": 49.14, "test_mr_map": 47.60, "test_path": "standard"},
+    {"method": "DQ-CGP V3 D1", "val_mr_map": 49.66, "test_mr_map": 48.06, "best_epoch": 103, "beta": 0.05, "binding_weight": 0.20, "routing_weight": 0.01},
+    {"method": "DQ-CGP dual independent D1+D3", "val_mr_map": 49.53, "test_mr_map": 46.85},
+    {"method": "DQ-CGP tied dual D1+D3", "val_mr_map": 49.32, "test_mr_map": 46.88},
+    {"method": "DQ-CGP tied all D1+D2+D3", "val_mr_map": 49.64, "test_mr_map": 46.80},
+    {"method": "NativeBind lambda 0.5", "val_mr_map": 49.67, "test_mr_map": 47.25, "test_path": "causal_attention_analyzer"},
+    {"method": "LCB Full", "val_mr_map": 49.19, "test_mr_map": 47.25, "test_path": "layerwise_ownership_analyzer"},
+    {"method": "Static semantic calibration", "val_mr_map": 48.95, "test_mr_map": null},
+    {"method": "Candidate-conditioned semantic calibration", "val_mr_map": 49.14, "test_mr_map": null}
+  ],
+  "dq_cgp_completed_grid": [
+    {"beta": 0.025, "binding_weight": 0.10, "routing_weight": 0.005, "val_mr_map": 49.31, "test_mr_map": 47.68},
+    {"beta": 0.025, "binding_weight": 0.10, "routing_weight": 0.020, "val_mr_map": 49.59, "test_mr_map": 46.73},
+    {"beta": 0.025, "binding_weight": 0.40, "routing_weight": 0.005, "val_mr_map": 49.16, "test_mr_map": 47.63},
+    {"beta": 0.025, "binding_weight": 0.40, "routing_weight": 0.020, "val_mr_map": 49.72, "test_mr_map": 47.49},
+    {"beta": 0.050, "binding_weight": 0.20, "routing_weight": 0.010, "val_mr_map": 49.66, "test_mr_map": 48.06},
+    {"beta": 0.100, "binding_weight": 0.10, "routing_weight": 0.005, "val_mr_map": 49.03, "test_mr_map": 47.40},
+    {"beta": 0.100, "binding_weight": 0.10, "routing_weight": 0.020, "val_mr_map": 49.69, "test_mr_map": 47.82},
+    {"beta": 0.100, "binding_weight": 0.40, "routing_weight": 0.005, "val_mr_map": 50.02, "test_mr_map": 47.88},
+    {"beta": 0.100, "binding_weight": 0.40, "routing_weight": 0.020, "val_mr_map": 48.93, "test_mr_map": 47.66}
+  ],
+  "dq_cgp_inference_beta_sweep": [
+    {"beta": 0.00, "val_mr_map": 49.59},
+    {"beta": 0.05, "val_mr_map": 49.66},
+    {"beta": 0.10, "val_mr_map": 49.53},
+    {"beta": 0.20, "val_mr_map": 49.45},
+    {"beta": 0.50, "val_mr_map": 49.16},
+    {"beta": 1.00, "val_mr_map": 48.43},
+    {"beta": 1.50, "val_mr_map": 47.87},
+    {"beta": 2.00, "val_mr_map": 47.56},
+    {"beta": 2.50, "val_mr_map": 47.29},
+    {"beta": 3.00, "val_mr_map": 47.20}
+  ],
+  "soccer_gmr_completed": [
+    {"method": "Native", "best_val_epoch": 137, "val_map": 22.59, "test_map": 20.73, "test_mr1": 11.55, "test_mr3": 24.14, "test_mr5": 31.51, "test_miou1": 28.95},
+    {"method": "Static semantic calibration", "best_val_epoch": 160, "val_map": 24.30, "test_map": 21.09, "test_mr1": 12.41, "test_mr3": 24.49, "test_mr5": 31.10, "test_miou1": 31.45},
+    {"method": "Candidate-conditioned calibration", "best_val_epoch": 139, "val_map": 22.48, "test_map": 19.43, "test_mr1": 11.57, "test_mr3": 22.06, "test_mr5": 28.39, "test_miou1": 28.36}
+  ],
+  "incomplete_or_running": [
+    {"method": "QVHighlights LS-DQ-CGP 2-layer", "status": "incomplete", "last_completed_epoch": 8, "best_val_mr_map": 29.45, "test_result": null},
+    {"method": "NativeBind lambda 2.0", "status": "suspended", "last_log_state": "entering epoch 45", "intermediate_best_val_mr_map": 46.23},
+    {"method": "NativeBind lambda 1/5/10/20", "status": "incomplete", "last_log_state": "partial epoch 1", "usable_result": false},
+    {"method": "Soccer-GMR Full CSC D1-attention binding 0.2, 2-layer", "status": "running", "snapshot_last_epoch": 39, "snapshot_best_epoch": 37, "snapshot_best_val_map": 15.97},
+    {"method": "Soccer-GMR LS-DQ-CGP 2-layer", "status": "running", "snapshot_last_epoch": 88, "snapshot_best_epoch": 57, "snapshot_best_val_map": 18.23}
+  ]
+}

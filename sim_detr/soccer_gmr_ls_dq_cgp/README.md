@@ -64,3 +64,10 @@ python -m sim_detr.soccer_gmr_ls_dq_cgp.inference \
 
 `static_bypass` and `context_roll` are inference counterfactuals for verifying
 that any gain depends on adapted semantics and query-context correspondence.
+
+## Current run status
+
+At the 2026-09-01 19:31 CST log snapshot, the seed-2023 run had completed epoch
+88. Its best validation mAP so far was `18.23` at epoch 57; epoch 88 obtained
+`17.42`. Training was still active and no test evaluation had been run. These
+are intermediate monitoring values, not final results.

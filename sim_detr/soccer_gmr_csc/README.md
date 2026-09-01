@@ -53,7 +53,8 @@ Hungarian targets, so every candidate is also supervised as background; span,
 GIoU, and positive saliency losses are exact zero when a batch is all-null.
 Positive samples use a null-safe pairwise saliency margin over the GT temporal
 union. At inference, `pred_exist_score` is the adapter probability and applies
-the same soft gate below 0.3. The GMR adapter is identical in Native, Static,
+a soft ranking multiplier below 0.4. The official G-mIoU hard gate also uses
+0.4. The GMR adapter is identical in Native, Static,
 and Full; CSC still changes only the candidate foreground logit. CTC uses an
 all-zero temporal target for null samples, while VTC is computed only among
  positive query-video pairs to avoid treating absent events as positive
@@ -137,3 +138,16 @@ bash sim_detr/soccer_gmr_csc/scripts/run_counterfactuals.sh \
 The implementation is isolated to this directory plus the generic
 `sim_detr/semantic_calibration/` wrapper. The native `sim_detr/model.py`,
 `transformer.py`, and `matcher.py` are not modified.
+
+## Additional local runs
+
+A validation-only two-layer comparison with the same batch-8, null-aware,
+mask-loss-6 protocol obtained `22.41` mAP for Static and `20.88` for Full. No
+matched two-layer Native run or test evaluation exists, so these values do not
+support a two-layer effectiveness claim.
+
+At the 2026-09-01 19:31 CST snapshot, a separate two-layer Full run using D1
+cross-attention as semantic evidence and adding binding weight 0.2 had completed
+epoch 39. Its best validation mAP so far was `15.97` at epoch 37. That run was
+still training and differs in more than one method variable from the completed
+native-mask comparison; it is not a final result.
