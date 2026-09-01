@@ -116,6 +116,17 @@ Individual run:
 bash sim_detr/soccer_gmr_csc/scripts/train_variant.sh full 0 2023
 ```
 
+To repeat the controlled comparison with a two-layer decoder while keeping all
+other settings unchanged:
+
+```bash
+SOCCER_GMR_SKIP_NATIVE=1 \
+SOCCER_GMR_STATIC_GPU=0 \
+SOCCER_GMR_FULL_GPU=1 \
+SOCCER_GMR_RUN_TAG=nullaware_maskloss6_bsz8_dec2 \
+bash sim_detr/soccer_gmr_csc/scripts/train_all_tmux.sh 2023 --dec_layers 2
+```
+
 After Full training, run all correspondence interventions:
 
 ```bash

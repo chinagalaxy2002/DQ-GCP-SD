@@ -27,6 +27,14 @@ def build_parser():
     parser.add_argument("--debug", action="store_true")
     parser.add_argument("--n_epoch", type=int, default=400)
     parser.add_argument("--max_es_cnt", type=int, default=50)
+    parser.add_argument(
+        "--dec_layers",
+        type=int,
+        default=4,
+        choices=range(2, 5),
+        metavar="{2,3,4}",
+        help="Number of native Sim-DETR decoder layers.",
+    )
     parser.add_argument("--lr", type=float, default=5e-5)
     parser.add_argument("--lr_drop", type=int, default=400)
     parser.add_argument("--wd", type=float, default=1e-4)
@@ -81,7 +89,6 @@ def parse_options(argv=None):
     # Native Sim-DETR architecture and loss settings.
     opt.position_embedding = "sine"
     opt.enc_layers = 2
-    opt.dec_layers = 4
     opt.dim_feedforward = 1024
     opt.hidden_dim = 256
     opt.input_dropout = 0.5
