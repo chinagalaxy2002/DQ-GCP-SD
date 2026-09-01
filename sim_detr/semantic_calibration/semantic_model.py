@@ -11,6 +11,17 @@ from .semantic_calibrator import (
     pool_video_evidence,
 )
 from .transformer_capture import TransformerOutputCapture
+from .diagnostics import (
+    farthest_candidate_context,
+    random_deranged_context,
+    roll_candidate_context,
+)
+
+
+CONTEXT_VARIANTS = {
+    "aligned", "roll", "roll-1", "roll-2", "roll-3",
+    "random-derangement", "farthest-context", "uniform",
+}
 
 
 class SimDETRWithSemanticCalibration(nn.Module):
@@ -40,6 +51,8 @@ class SimDETRWithSemanticCalibration(nn.Module):
         self.detach_support = bool(detach_support)
         self.diagnostic_mode = bool(diagnostic_mode)
         self.semantic_context_variant = "aligned"
+        self.semantic_counterfactual_seed = 2017
+        self._counterfactual_sample_offset = 0
         self.semantic_scale_override = None
 
     @property
@@ -52,9 +65,13 @@ class SimDETRWithSemanticCalibration(nn.Module):
                 raise ValueError(f"Unknown semantic_variant: {semantic_variant}")
             self.semantic_variant = semantic_variant
         if context_variant is not None:
-            if context_variant not in {"aligned", "roll", "uniform"}:
+            if context_variant not in CONTEXT_VARIANTS:
                 raise ValueError(f"Unknown context variant: {context_variant}")
             self.semantic_context_variant = context_variant
+            self._counterfactual_sample_offset = 0
+
+    def reset_counterfactual_state(self):
+        self._counterfactual_sample_offset = 0
 
     def forward(self, *args, **kwargs):
         native_outputs = self.base_model(*args, **kwargs)
@@ -87,8 +104,19 @@ class SimDETRWithSemanticCalibration(nn.Module):
                 weights = valid / valid.sum(dim=-1, keepdim=True).clamp_min(1.0)
                 weights = weights.expand(-1, support.shape[1], -1)
             video_context = pool_video_evidence(weights, video_memory)
-            if self.semantic_context_variant == "roll":
-                video_context = torch.roll(video_context, shifts=1, dims=1)
+            context_variant = self.semantic_context_variant
+            if context_variant in {"roll", "roll-1", "roll-2", "roll-3"}:
+                shift = 1 if context_variant == "roll" else int(context_variant.rsplit("-", 1)[1])
+                video_context = roll_candidate_context(video_context, shift=shift)
+            elif context_variant == "random-derangement":
+                video_context, _ = random_deranged_context(
+                    video_context,
+                    seed=self.semantic_counterfactual_seed,
+                    sample_offset=self._counterfactual_sample_offset,
+                )
+                self._counterfactual_sample_offset += video_context.shape[0]
+            elif context_variant == "farthest-context":
+                video_context, _ = farthest_candidate_context(video_context)
 
         semantic_output = self.semantic_calibrator(
             query_states=query_states,

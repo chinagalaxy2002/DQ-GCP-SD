@@ -5,7 +5,11 @@ import unittest
 import torch
 from torch import nn
 
-from sim_detr.semantic_calibration.diagnostics import roll_candidate_context
+from sim_detr.semantic_calibration.diagnostics import (
+    farthest_candidate_context,
+    random_deranged_context,
+    roll_candidate_context,
+)
 from sim_detr.semantic_calibration.model_builder import load_semantic_checkpoint
 from sim_detr.semantic_calibration.semantic_calibrator import (
     CandidateSemanticCalibrator,
@@ -13,6 +17,7 @@ from sim_detr.semantic_calibration.semantic_calibrator import (
     pool_video_evidence,
 )
 from sim_detr.semantic_calibration.semantic_model import SimDETRWithSemanticCalibration
+from sim_detr.semantic_calibration.stratified_eval import stratified_occurrence_metrics
 
 
 class FakeTransformer(nn.Module):
@@ -91,9 +96,49 @@ class SemanticCalibrationTest(unittest.TestCase):
         self.assertFalse(torch.equal(output.semantic_scores[:, 0], output.semantic_scores[:, 1]))
 
     def test_context_roll(self):
-        context = torch.tensor([[[1.0], [2.0], [3.0]]])
-        rolled = roll_candidate_context(context)
-        self.assertTrue(torch.equal(rolled, torch.tensor([[[3.0], [1.0], [2.0]]])))
+        context = torch.tensor([[[1.0], [2.0], [3.0], [4.0]]])
+        self.assertTrue(torch.equal(
+            roll_candidate_context(context, 1), torch.tensor([[[4.0], [1.0], [2.0], [3.0]]])
+        ))
+        self.assertTrue(torch.equal(
+            roll_candidate_context(context, 2), torch.tensor([[[3.0], [4.0], [1.0], [2.0]]])
+        ))
+        self.assertTrue(torch.equal(
+            roll_candidate_context(context, 3), torch.tensor([[[2.0], [3.0], [4.0], [1.0]]])
+        ))
+
+    def test_random_derangement_is_deterministic_and_has_no_fixed_points(self):
+        context = torch.arange(2 * 5, dtype=torch.float32).reshape(2, 5, 1)
+        first, indices = random_deranged_context(context, seed=2017, sample_offset=10)
+        second, second_indices = random_deranged_context(context, seed=2017, sample_offset=10)
+        self.assertTrue(torch.equal(first, second))
+        self.assertTrue(torch.equal(indices, second_indices))
+        identity = torch.arange(5).expand(2, -1)
+        self.assertFalse(torch.any(indices.cpu() == identity))
+
+    def test_farthest_context_never_selects_itself(self):
+        context = torch.tensor([[[1.0, 0.0], [-1.0, 0.0], [0.0, 1.0]]])
+        _, indices = farthest_candidate_context(context)
+        self.assertEqual(indices[0, 0].item(), 1)
+        self.assertEqual(indices[0, 1].item(), 0)
+        self.assertFalse(torch.any(indices.cpu() == torch.arange(3).unsqueeze(0)))
+
+    def test_occurrence_stratified_metrics(self):
+        ground_truth = [
+            {"qid": 1, "relevant_windows": [[0, 2]]},
+            {"qid": 2, "relevant_windows": [[0, 2], [4, 6]]},
+        ]
+        submission = [
+            {"qid": 1, "pred_relevant_windows": [[0, 2, 1.0]]},
+            {"qid": 2, "pred_relevant_windows": [[0, 2, 1.0], [4, 6, 0.9]]},
+        ]
+        metrics = stratified_occurrence_metrics(
+            submission, ground_truth, num_workers=1, chunksize=1
+        )
+        self.assertEqual(metrics["all"]["num_records"], 2)
+        self.assertEqual(metrics["single-occurrence"]["num_records"], 1)
+        self.assertEqual(metrics["multi-occurrence"]["num_records"], 1)
+        self.assertEqual(metrics["all"]["brief"]["MR-full-mAP"], 100.0)
 
     def test_uniform_context_expands_to_every_candidate(self):
         wrapper = SimDETRWithSemanticCalibration(

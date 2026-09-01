@@ -11,5 +11,5 @@ CUDA_VISIBLE_DEVICES="${gpu_id}" \
   --resume "${checkpoint}" \
   --eval_split_name val \
   --eval_path data/highlight_val_release.jsonl \
-  --eval_results_dir "$(dirname "${checkpoint}")/counterfactuals" \
+  --eval_results_dir "$(dirname "${checkpoint}")/expanded_counterfactuals" \
   "$@"

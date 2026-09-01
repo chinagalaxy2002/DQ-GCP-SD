@@ -50,11 +50,15 @@ auxiliary outputs, and original losses remain unchanged.
 | + Static semantic calibration | **68.52** | 53.35 | **69.25** | 50.33 | 48.95 |
 | + Candidate-conditioned calibration | 67.81 | **54.52** | 68.78 | 50.20 | **49.14** |
 
-The candidate-conditioned model matches the baseline, and rolling candidate
-contexts slightly increases MR mAP (`49.14 → 49.17`). This is a No-Go under
-the experiment's pre-registered criterion: candidate-context correspondence is
-not supported as the source of a retrieval improvement. See the
-[complete implementation, logs, counterfactual table, and reproduction guide](results_semantic_calibration/README.md).
+The candidate-conditioned model matches the baseline. We further evaluated
+roll-1/2/3, deterministic random derangement, farthest-context, uniform, and
+static interventions on the same Full checkpoint, separately on all 1,550,
+single-occurrence 1,020, and multi-occurrence 530 validation queries. All-query
+MR mAP differs from aligned by at most `0.04`; multi-occurrence MR mAP differs
+by at most `0.09`, and roll-3 is slightly higher rather than lower. The
+expanded diagnosis therefore remains a No-Go: candidate-context
+correspondence is not supported as the source of a retrieval improvement. See
+the [complete implementation, logs, occurrence-stratified tables, and reproduction guide](results_semantic_calibration/README.md).
 
 ### Completed Native Hungarian Binding control
 

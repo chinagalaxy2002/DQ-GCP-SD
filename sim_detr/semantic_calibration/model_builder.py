@@ -28,6 +28,7 @@ def build_model_semantic(args):
         diagnostic_mode=getattr(args, "semantic_diagnostic_mode", False),
     )
     model.semantic_context_variant = getattr(args, "semantic_context_variant", "aligned")
+    model.semantic_counterfactual_seed = getattr(args, "semantic_counterfactual_seed", 2017)
     model.semantic_scale_override = getattr(args, "semantic_scale_override", None)
     return model, criterion
 

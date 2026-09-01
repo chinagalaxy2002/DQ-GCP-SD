@@ -8,10 +8,17 @@ import sys
 from sim_detr.config import BaseOptions, TestOptions
 
 
+CONTEXT_VARIANT_CHOICES = (
+    "aligned", "roll", "roll-1", "roll-2", "roll-3",
+    "random-derangement", "farthest-context", "uniform",
+)
+
+
 def add_semantic_args(parser: argparse.ArgumentParser) -> argparse.ArgumentParser:
     group = parser.add_argument_group("Candidate-Conditioned Semantic Calibration")
     group.add_argument("--semantic_variant", choices=("native", "static", "full"), default="full")
-    group.add_argument("--semantic_context_variant", choices=("aligned", "roll", "uniform"), default="aligned")
+    group.add_argument("--semantic_context_variant", choices=CONTEXT_VARIANT_CHOICES, default="aligned")
+    group.add_argument("--semantic_counterfactual_seed", type=int, default=2017)
     group.add_argument("--semantic_hidden_dim", type=int, default=256)
     group.add_argument("--semantic_dropout", type=float, default=0.1)
     group.add_argument("--semantic_scale_init", type=float, default=1.0)
@@ -29,7 +36,8 @@ def _capture_runtime_semantic_overrides(argv):
     # Do not install defaults here: values absent from the command line must
     # remain whatever the checkpoint's opt.json recorded.
     parser.add_argument("--semantic_variant", choices=("native", "static", "full"), default=argparse.SUPPRESS)
-    parser.add_argument("--semantic_context_variant", choices=("aligned", "roll", "uniform"), default=argparse.SUPPRESS)
+    parser.add_argument("--semantic_context_variant", choices=CONTEXT_VARIANT_CHOICES, default=argparse.SUPPRESS)
+    parser.add_argument("--semantic_counterfactual_seed", type=int, default=argparse.SUPPRESS)
     parser.add_argument("--semantic_hidden_dim", type=int, default=argparse.SUPPRESS)
     parser.add_argument("--semantic_dropout", type=float, default=argparse.SUPPRESS)
     parser.add_argument("--semantic_scale_init", type=float, default=argparse.SUPPRESS)

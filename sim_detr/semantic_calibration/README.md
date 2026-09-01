@@ -14,8 +14,12 @@ z_i = cosine(Wq q_i, We e_i)
 pred_logits[..., 0] += softplus(scale) * z_i
 ```
 
-`native`, `static`, and `full` modes are supported. Context counterfactuals are
-`aligned`, `roll`, and `uniform`. Support weights are detached by default.
+`native`, `static`, and `full` modes are supported. The expanded context
+counterfactuals are `aligned`, `roll-1`, `roll-2`, `roll-3`, deterministic
+`random-derangement`, `farthest-context`, and `uniform`. The inference entry
+point also evaluates `static` and writes official full-range MR metrics for
+all, single-occurrence, and multi-occurrence queries. Support weights are
+detached by default.
 
 The already-reproduced native baseline should not be retrained for this pilot.
 Run only:
