@@ -9,6 +9,7 @@ from .semantic_calibrator import (
     CandidateSemanticCalibrator,
     normalize_evidence_weights,
     pool_video_evidence,
+    softmax_evidence_weights,
 )
 from .transformer_capture import TransformerOutputCapture
 from .diagnostics import (
@@ -36,10 +37,13 @@ class SimDETRWithSemanticCalibration(nn.Module):
         semantic_variant: str = "full",
         detach_support: bool = True,
         diagnostic_mode: bool = False,
+        evidence_source: str = "native_pred_mask",
     ):
         super().__init__()
         if semantic_variant not in {"native", "static", "full"}:
             raise ValueError(f"Unknown semantic_variant: {semantic_variant}")
+        if evidence_source not in {"native_pred_mask", "native_mask_logits"}:
+            raise ValueError(f"Unknown evidence_source: {evidence_source}")
         self.base_model = base_model
         self.semantic_calibrator = CandidateSemanticCalibrator(
             hidden_dim=hidden_dim,
@@ -50,6 +54,7 @@ class SimDETRWithSemanticCalibration(nn.Module):
         self.semantic_variant = semantic_variant
         self.detach_support = bool(detach_support)
         self.diagnostic_mode = bool(diagnostic_mode)
+        self.evidence_source = evidence_source
         self.semantic_context_variant = "aligned"
         self.semantic_counterfactual_seed = 2017
         self._counterfactual_sample_offset = 0
@@ -73,9 +78,20 @@ class SimDETRWithSemanticCalibration(nn.Module):
     def reset_counterfactual_state(self):
         self._counterfactual_sample_offset = 0
 
+    def _native_mask_logits(self, query_states, video_memory):
+        """Reconstruct the unmodified native mask field before sigmoid."""
+        if query_states.shape[0] < 2:
+            raise RuntimeError("Sim-DETR native mask uses the penultimate decoder layer")
+        support_queries = query_states[-2]
+        support_queries = support_queries + self.base_model.mask_head(support_queries)
+        query_norm = torch.nn.functional.normalize(support_queries, p=2, dim=-1)
+        video_norm = torch.nn.functional.normalize(video_memory, p=2, dim=-1)
+        similarity = torch.bmm(query_norm, video_norm.transpose(1, 2))
+        return self.base_model.logit_scale.exp() * similarity
+
     def forward(self, *args, **kwargs):
         native_outputs = self.base_model(*args, **kwargs)
-        query_states, video_memory = self.transformer_capture.consume()
+        all_query_states, video_memory = self.transformer_capture.consume()
         native_logits = native_outputs["pred_logits"]
         native_outputs["pred_logits_native"] = native_logits
 
@@ -84,21 +100,27 @@ class SimDETRWithSemanticCalibration(nn.Module):
             native_outputs["semantic_scale"] = native_logits.new_zeros(())
             return native_outputs
 
-        if query_states.ndim != 4:
-            raise RuntimeError(f"Expected decoder states [L,B,Q,D], got {query_states.shape}")
-        query_states = query_states[-1]
+        if all_query_states.ndim != 4:
+            raise RuntimeError(f"Expected decoder states [L,B,Q,D], got {all_query_states.shape}")
+        query_states = all_query_states[-1]
         static_semantic = native_outputs["src_txt_cls_ed"]
         weights = None
         video_context = None
         if self.semantic_variant == "full":
-            support = native_outputs["pred_masks"]
+            if self.evidence_source == "native_pred_mask":
+                support = native_outputs["pred_masks"]
+            else:
+                support = self._native_mask_logits(all_query_states, video_memory)
             if self.detach_support:
                 support = support.detach()
 
             video_mask = native_outputs.get("video_mask")
             if video_mask is None:
                 raise KeyError("Native Sim-DETR output does not contain video_mask")
-            weights = normalize_evidence_weights(support, video_mask)
+            if self.evidence_source == "native_pred_mask":
+                weights = normalize_evidence_weights(support, video_mask)
+            else:
+                weights = softmax_evidence_weights(support, video_mask)
             if self.semantic_context_variant == "uniform":
                 valid = video_mask.to(device=support.device, dtype=support.dtype).unsqueeze(1)
                 weights = valid / valid.sum(dim=-1, keepdim=True).clamp_min(1.0)

@@ -50,6 +50,28 @@ def normalize_evidence_weights(
     return torch.where(degenerate, fallback, normalized)
 
 
+def softmax_evidence_weights(
+    support_logits: torch.Tensor,
+    valid_video_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Turn native temporal-mask logits into masked probability weights.
+
+    Sim-DETR exposes ``pred_masks`` after a high-temperature sigmoid.  That
+    representation can saturate at one and lose the temporal ranking needed
+    for evidence pooling.  This helper preserves the same native mask field,
+    but normalizes its pre-sigmoid logits with a masked softmax.
+    """
+    if support_logits.ndim != 3 or valid_video_mask.ndim != 2:
+        raise ValueError("support_logits must be [B,Q,T] and mask must be [B,T]")
+    if (support_logits.shape[0] != valid_video_mask.shape[0]
+            or support_logits.shape[2] != valid_video_mask.shape[1]):
+        raise ValueError("support_logits and valid_video_mask have incompatible shapes")
+    valid = valid_video_mask.to(device=support_logits.device, dtype=torch.bool).unsqueeze(1)
+    masked_logits = support_logits.masked_fill(~valid, float("-inf"))
+    weights = torch.softmax(masked_logits, dim=-1)
+    return weights.masked_fill(~valid, 0.0)
+
+
 def pool_video_evidence(weights: torch.Tensor, video_context: torch.Tensor) -> torch.Tensor:
     """Pool ``[B,T,D]`` video memory using ``[B,Q,T]`` evidence weights."""
     if weights.ndim != 3 or video_context.ndim != 3:

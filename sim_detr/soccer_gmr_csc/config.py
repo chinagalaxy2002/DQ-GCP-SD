@@ -30,8 +30,8 @@ def build_parser():
     parser.add_argument("--lr", type=float, default=5e-5)
     parser.add_argument("--lr_drop", type=int, default=400)
     parser.add_argument("--wd", type=float, default=1e-4)
-    parser.add_argument("--bsz", type=int, default=64)
-    parser.add_argument("--eval_bsz", type=int, default=64)
+    parser.add_argument("--bsz", type=int, default=8)
+    parser.add_argument("--eval_bsz", type=int, default=8)
     parser.add_argument("--grad_clip", type=float, default=0.1)
     parser.add_argument("--eval_epoch_interval", type=int, default=1)
     parser.add_argument("--max_q_l", type=int, default=32)
@@ -43,6 +43,12 @@ def build_parser():
     parser.add_argument("--semantic_scale_init", type=float, default=1.0)
     parser.add_argument("--semantic_no_detach_support", action="store_true")
     parser.add_argument("--semantic_diagnostic_mode", action="store_true")
+    parser.add_argument(
+        "--semantic_evidence_source",
+        choices=("native_pred_mask", "native_mask_logits"),
+        default="native_mask_logits",
+        help="Native mask field used for candidate temporal evidence.",
+    )
     parser.add_argument("--counterfactual", choices=(
         "aligned", "roll-1", "roll-2", "roll-3", "random-derangement",
         "farthest-context", "uniform",
@@ -67,7 +73,9 @@ def parse_options(argv=None):
     opt.t_feat_dim = 512
     opt.a_feat_dir = None
     opt.a_feat_dim = None
-    opt.device = torch.device("cuda:0" if torch.cuda.is_available() and opt.gpu_id >= 0 else "cpu")
+    opt.device = torch.device(
+        f"cuda:{opt.gpu_id}" if torch.cuda.is_available() and opt.gpu_id >= 0 else "cpu"
+    )
     opt.pin_memory = opt.device.type == "cuda"
 
     # Native Sim-DETR architecture and loss settings.
@@ -100,10 +108,19 @@ def parse_options(argv=None):
     opt.giou_loss_coef = 1.0
     opt.label_loss_coef = 4.0
     opt.eos_coef = 0.1
-    opt.mask_loss_coef = 0.0
+    opt.mask_loss_coef = 6.0
     opt.iou_scores_loss_coef = 2.0
     opt.VTC_loss_coef = 0.3
     opt.CTC_loss_coef = 0.5
+    # Preserve native Sim-DETR losses while preventing the abundant null/background
+    # targets from overwhelming the sparse foreground candidates.
+    opt.background_focal_weight = opt.eos_coef
+    opt.null_background_focal_weight = 0.05
+    opt.null_iou_loss_weight = 0.05
+    opt.null_ctc_loss_weight = 0.1
+    # Keep bsz=64 throughput while preserving the original small-batch VTC
+    # contrastive difficulty (the released GMR protocol uses bsz=8).
+    opt.vtc_group_size = 8
     opt.semantic_detach_support = not opt.semantic_no_detach_support
     opt.semantic_context_variant = opt.counterfactual
     opt.semantic_counterfactual_seed = opt.seed
@@ -111,7 +128,7 @@ def parse_options(argv=None):
     opt.use_exist_head = True
     opt.exist_pool = "max"
     opt.exist_loss_coef = 1.0
-    opt.exist_gate_thd = 0.3
+    opt.exist_gate_thd = 0.4
 
     required = [opt.train_path, opt.eval_path, opt.test_path, opt.t_feat_dir, *opt.v_feat_dirs]
     missing = [str(path) for path in required if not path.exists()]

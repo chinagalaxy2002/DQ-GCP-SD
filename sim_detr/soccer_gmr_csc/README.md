@@ -12,12 +12,12 @@ The three from-scratch runs differ only in final candidate scoring:
 | --- | --- | --- |
 | Native | No | No |
 | Static | `cos(q_i, e)` | No |
-| Full | `cos(q_i, e_i)` | Native candidate mask |
+| Full | `cos(q_i, e_i)` | Native candidate mask logits |
 
-The Full definition is unchanged:
+Full uses the same native mask field before its output sigmoid:
 
 ```text
-p_i = normalize(native_pred_mask_i)
+p_i = masked_softmax(native_pre_sigmoid_mask_logit_i)
 v_i = sum_t p_i(t) F_t
 e_i = LN(e + MLP([LN(e), LN(v_i)]))
 z_i = cosine(Wq q_i, We e_i)
@@ -36,7 +36,10 @@ auxiliary outputs, decoder states, and native matching remain unchanged.
 - GMR loss coefficients: Span L1 10, GIoU 1, candidate classification 4,
   existence BCE 1, and saliency 1.
 - Shared native Sim-DETR terms remain enabled: IoU-score regression 2,
-  CTC 0.5, and VTC 0.3. VTC uses only positive pairs under GMR.
+  CTC 0.5, and VTC 0.3. Foreground matched candidates retain unit weight;
+  positive-sample background candidates use `eos_coef=0.1`, and all-null
+  candidates use 0.05. Null IoU and CTC terms are likewise downweighted to
+  0.05 and 0.1. VTC uses only positives in groups of at most eight.
 - Best checkpoint is selected by official positive-query validation `mAP`.
 - Full official GMR metrics are saved at every validation epoch.
 
@@ -71,5 +74,5 @@ After Full training, run all correspondence interventions:
 
 ```bash
 bash sim_detr/soccer_gmr_csc/scripts/run_counterfactuals.sh \
-  results_soccer_gmr_csc/full_seed2023/model_best.ckpt 0 val
+  results_soccer_gmr_csc/full_nullaware_masklogits_seed2023/model_best.ckpt 0 val
 ```

@@ -8,9 +8,50 @@ import torch
 
 from sim_detr.soccer_gmr_csc.dataset import SoccerGMRDataset, soccer_gmr_collate
 from sim_detr.soccer_gmr_csc.evaluation import official_gmr_metrics
+from sim_detr.semantic_calibration.semantic_calibrator import softmax_evidence_weights
 
 
 class SoccerGMRCSCTest(unittest.TestCase):
+    def test_native_mask_logits_keep_candidate_specific_weights(self):
+        logits = torch.tensor([[[3.0, 0.0, -2.0, 100.0],
+                                [-2.0, 0.0, 3.0, 100.0]]])
+        valid = torch.tensor([[1, 1, 1, 0]], dtype=torch.bool)
+        weights = softmax_evidence_weights(logits, valid)
+        torch.testing.assert_close(weights.sum(dim=-1), torch.ones(1, 2))
+        self.assertTrue(torch.all(weights[..., -1] == 0))
+        self.assertGreater((weights[:, 0] - weights[:, 1]).abs().sum().item(), 1.0)
+
+    def test_null_background_weight_is_lower_than_foreground_weight(self):
+        from sim_detr.soccer_gmr_csc.criterion import NullSafeCriterion
+
+        class Native:
+            foreground_label = 0
+            background_label = 1
+
+            @staticmethod
+            def _get_src_permutation_idx(indices):
+                return (
+                    torch.cat([item[0] + batch for batch, item in enumerate(indices)]),
+                    torch.cat([item[1] for item in indices]),
+                )
+
+        criterion = NullSafeCriterion.__new__(NullSafeCriterion)
+        criterion.native = Native()
+        criterion.background_focal_weight = 0.1
+        criterion.null_background_focal_weight = 0.05
+        logits = torch.zeros((2, 2, 2), requires_grad=True)
+        outputs = {"pred_logits": logits}
+        targets = {"exist_label": torch.tensor([1.0, 0.0])}
+        indices = [(torch.tensor([0]), torch.tensor([0])),
+                   (torch.empty(0, dtype=torch.long), torch.empty(0, dtype=torch.long))]
+        loss = criterion._null_aware_label_loss(outputs, targets, indices)["loss_label"]
+        loss.backward()
+        foreground_grad = logits.grad[0, 0].abs().sum()
+        positive_background_grad = logits.grad[0, 1].abs().sum()
+        null_background_grad = logits.grad[1].abs().sum() / 2
+        self.assertGreater(foreground_grad, positive_background_grad)
+        self.assertGreater(positive_background_grad, null_background_grad)
+
     def test_dataset_handles_null_single_and_multi(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

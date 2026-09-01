@@ -73,12 +73,21 @@ def evaluate_checkpoint(
 ) -> Dict[str, Any]:
     """Run full LCB evaluation on a saved checkpoint."""
     checkpoint_data = torch.load(checkpoint_path, map_location="cpu", weights_only=False)
-    opt = argparse.Namespace(**checkpoint_data["opt"])
+    opt_raw = checkpoint_data["opt"]
+    if isinstance(opt_raw, dict):
+        opt = argparse.Namespace(**opt_raw)
+    elif isinstance(opt_raw, argparse.Namespace):
+        opt = argparse.Namespace(**vars(opt_raw))
+    else:
+        opt = opt_raw
     opt.device = torch.device(
         device if device is not None else ("cuda" if torch.cuda.is_available() else "cpu")
     )
     if opt.device.type == "cuda":
-        torch.cuda.set_device(0)
+        if opt.device.index is not None:
+            torch.cuda.set_device(opt.device.index)
+        else:
+            torch.cuda.set_device(0)
 
     # Build model and load weights
     from sim_detr.model import build_model
@@ -206,7 +215,7 @@ def evaluate_checkpoint(
         f"d{layer_id + 1}": _formal_metrics(submission, dataset.data)
         for layer_id, submission in enumerate(processed_submissions)
     }
-    subset_names = ("single", "multi", "clean_multi", "two", "three_or_more")
+    subset_names = ("single", "multi", "two", "three_or_more")
     final_submission = processed_submissions[-1]
     formal["subsets"] = {}
     for subset in subset_names:

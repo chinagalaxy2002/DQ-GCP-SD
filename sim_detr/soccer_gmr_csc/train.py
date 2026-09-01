@@ -59,15 +59,43 @@ def weighted_native_loss(losses, criterion):
 
 
 def alignment_losses(outputs, model_inputs, targets, opt):
-    ctc = CTC_Loss()(
-        outputs["src_vid_ed"], outputs["src_txt_ed"], targets["src_pos_mask"],
-        model_inputs["src_vid_mask"], model_inputs["src_txt_mask"],
-    )
     positive = targets["exist_label"].bool()
+    ctc_loss = CTC_Loss()
+    ctc_terms = []
     if positive.any():
-        vtc = VTCLoss()(
-            outputs["src_txt_cls_ed"][positive], outputs["src_vid_cls_ed"][positive]
-        )
+        ctc_terms.append((
+            ctc_loss(
+                outputs["src_vid_ed"][positive], outputs["src_txt_ed"][positive],
+                targets["src_pos_mask"][positive], model_inputs["src_vid_mask"][positive],
+                model_inputs["src_txt_mask"][positive],
+            ),
+            positive.float().mean(),
+        ))
+    null = ~positive
+    if null.any():
+        ctc_terms.append((
+            ctc_loss(
+                outputs["src_vid_ed"][null], outputs["src_txt_ed"][null],
+                targets["src_pos_mask"][null], model_inputs["src_vid_mask"][null],
+                model_inputs["src_txt_mask"][null],
+            ),
+            null.float().mean() * opt.null_ctc_loss_weight,
+        ))
+    if ctc_terms:
+        ctc = sum(value * weight for value, weight in ctc_terms)
+    else:
+        ctc = outputs["pred_logits"].sum() * 0.0
+    if positive.any():
+        text = outputs["src_txt_cls_ed"][positive]
+        video = outputs["src_vid_cls_ed"][positive]
+        # Keep the original VTC objective but cap the in-batch negative pool at
+        # its released Soccer-GMR batch size.  bsz=64 otherwise changes the
+        # contrastive task itself, rather than merely accelerating training.
+        chunks = [
+            VTCLoss()(text[start:start + opt.vtc_group_size], video[start:start + opt.vtc_group_size])
+            for start in range(0, len(text), opt.vtc_group_size)
+        ]
+        vtc = torch.stack(chunks).mean()
     else:
         vtc = outputs["pred_logits"].sum() * 0.0
     return opt.CTC_loss_coef * ctc + opt.VTC_loss_coef * vtc, ctc, vtc
@@ -115,7 +143,7 @@ def save_checkpoint(path, model, optimizer, scheduler, epoch, best_score, opt):
 def main(argv=None):
     opt = parse_options(argv)
     if opt.device.type == "cuda":
-        torch.cuda.set_device(0)
+        torch.cuda.set_device(opt.device)
     set_seed(opt.seed)
     output_dir = opt.results_root / opt.exp_id
     if output_dir.exists() and any(output_dir.iterdir()) and opt.resume is None:

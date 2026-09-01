@@ -22,6 +22,7 @@ def build_soccer_gmr_model(opt):
         semantic_variant=opt.semantic_variant,
         detach_support=opt.semantic_detach_support,
         diagnostic_mode=opt.semantic_diagnostic_mode,
+        evidence_source=opt.semantic_evidence_source,
     )
     semantic_model.semantic_context_variant = opt.semantic_context_variant
     semantic_model.semantic_counterfactual_seed = opt.semantic_counterfactual_seed
@@ -31,6 +32,9 @@ def build_soccer_gmr_model(opt):
     return model, NullSafeCriterion(
         native_criterion, exist_loss_coef=opt.exist_loss_coef,
         saliency_loss_coef=opt.lw_saliency, saliency_margin=opt.saliency_margin,
+        background_focal_weight=opt.background_focal_weight,
+        null_background_focal_weight=opt.null_background_focal_weight,
+        null_iou_loss_weight=opt.null_iou_loss_weight,
     )
 
 
