@@ -1,7 +1,8 @@
-"""Null-safe adapter around the unchanged native Sim-DETR criterion."""
+"""Null-safe adapter around the unchanged native Sim-DETR criterion with Hungarian D1 Binding Loss."""
 
 from __future__ import annotations
 
+from typing import Optional
 import torch
 import torch.nn.functional as F
 import torchvision
@@ -10,13 +11,15 @@ from torch import nn
 from sim_detr.misc import accuracy
 from sim_detr.span_utils import span_cxw_to_xx
 
+from .binding_loss import native_matched_binding_loss
+
 
 class NullSafeCriterion(nn.Module):
     def __init__(
         self, native_criterion, exist_loss_coef=1.0,
         saliency_loss_coef=1.0, saliency_margin=0.2,
         background_focal_weight=0.1, null_background_focal_weight=0.05,
-        null_iou_loss_weight=0.05,
+        null_iou_loss_weight=0.05, binding_loss_coef=0.0,
     ):
         super().__init__()
         self.native = native_criterion
@@ -27,6 +30,9 @@ class NullSafeCriterion(nn.Module):
         self.background_focal_weight = float(background_focal_weight)
         self.null_background_focal_weight = float(null_background_focal_weight)
         self.null_iou_loss_weight = float(null_iou_loss_weight)
+        self.binding_loss_coef = float(binding_loss_coef)
+        if self.binding_loss_coef > 0:
+            self.weight_dict["loss_binding"] = self.binding_loss_coef
 
     def _candidate_weights(self, outputs, targets, indices):
         """Downweight unmatched and null-set candidates without changing heads."""
@@ -55,9 +61,6 @@ class NullSafeCriterion(nn.Module):
             src_logits.transpose(1, 2), target,
             alpha=0.25, gamma=2.0, reduction="none",
         ).mean(dim=1)
-        # Divide by the unweighted number of candidates.  Hence an all-null
-        # batch contributes only ``null_background_focal_weight`` of its
-        # original background gradient instead of being renormalized back up.
         loss = (focal * self._candidate_weights(outputs, targets, indices)).mean()
         losses = {"loss_label": loss}
         if log and source[0].numel():
@@ -116,11 +119,20 @@ class NullSafeCriterion(nn.Module):
         return torch.stack(sample_losses).mean()
 
     def _all_null_losses(self, outputs, targets):
-        indices = self.native.matcher(outputs, targets)
+        batch_size = outputs["pred_logits"].shape[0]
+        device = outputs["pred_logits"].device
+        indices = [
+            (torch.empty(0, dtype=torch.int64, device=device),
+             torch.empty(0, dtype=torch.int64, device=device))
+            for _ in range(batch_size)
+        ]
         losses = self._null_aware_label_loss(outputs, targets, indices, log=False)
         zero = outputs["pred_spans"].sum() * 0.0
         losses.update({"loss_span": zero, "loss_giou": zero, "loss_mask_iou": zero})
         losses.update(self._null_aware_iou_loss(outputs, targets))
+        if self.binding_loss_coef > 0:
+            attention = outputs.get("d1_attention")
+            losses["loss_binding"] = attention.sum() * 0.0 if attention is not None else zero
         return losses
 
     def _replace_null_aware_losses(self, losses, outputs, targets, suffix=""):
@@ -140,6 +152,13 @@ class NullSafeCriterion(nn.Module):
                 self._replace_null_aware_losses(losses, auxiliary, targets, suffix=f"_{layer_index}")
             losses["loss_exist"] = self._existence_loss(outputs, targets)
             losses["loss_saliency"] = self._saliency_loss(outputs, targets)
+            if self.binding_loss_coef > 0:
+                indices = self.native.matcher(outputs, targets)
+                attention = outputs.get("d1_attention")
+                video_mask = outputs.get("video_mask")
+                losses["loss_binding"] = native_matched_binding_loss(
+                    attention, video_mask, targets, indices
+                )
             return losses
 
         primary = {key: value for key, value in outputs.items() if key != "aux_outputs"}

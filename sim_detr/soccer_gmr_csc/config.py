@@ -52,10 +52,18 @@ def build_parser():
     parser.add_argument("--semantic_no_detach_support", action="store_true")
     parser.add_argument("--semantic_diagnostic_mode", action="store_true")
     parser.add_argument(
+        "--binding_loss_coef",
+        "--native_bind_coef",
+        type=float,
+        default=0.0,
+        dest="binding_loss_coef",
+        help="Hungarian-matched D1 temporal attention binding loss coefficient.",
+    )
+    parser.add_argument(
         "--semantic_evidence_source",
-        choices=("native_pred_mask", "native_mask_logits"),
+        choices=("native_pred_mask", "native_mask_logits", "d1_attention"),
         default="native_mask_logits",
-        help="Native mask field used for candidate temporal evidence.",
+        help="Native mask field or attention used for candidate temporal evidence.",
     )
     parser.add_argument("--counterfactual", choices=(
         "aligned", "roll-1", "roll-2", "roll-3", "random-derangement",

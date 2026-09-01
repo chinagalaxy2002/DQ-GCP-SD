@@ -103,6 +103,36 @@ class SoccerGMRCSCTest(unittest.TestCase):
         self.assertEqual(metrics["brief"]["mAP"], 100.0)
         self.assertEqual(metrics["stats"]["num_multi_instance"], 1)
 
+    def test_hungarian_d1_binding_loss(self):
+        from sim_detr.soccer_gmr_csc.binding_loss import native_matched_binding_loss, span_overlap_mask
+
+        # Test overlap mask
+        spans = torch.tensor([[0.5, 0.4]])  # cx=0.5, w=0.4 -> [0.3, 0.7]
+        overlap = span_overlap_mask(spans, 10, torch.float32, torch.device("cpu"))
+        self.assertEqual(overlap.shape, (1, 10))
+        # frames 3, 4, 5, 6 should be True
+        self.assertTrue(torch.all(overlap[0, 3:7]))
+
+        # Test matched binding loss computation
+        attention = torch.zeros((1, 2, 10), requires_grad=True)
+        # Put attention at positive frames
+        with torch.no_grad():
+            attention[0, 0, 3:7] = 0.25
+            attention[0, 1, 0:2] = 0.5
+        vmask = torch.ones((1, 10), dtype=torch.bool)
+        targets = {
+            "span_labels": [{"spans": spans}],
+            "exist_label": torch.tensor([1.0]),
+        }
+        indices = [(torch.tensor([0]), torch.tensor([0]))]
+        loss = native_matched_binding_loss(attention, vmask, targets, indices)
+        self.assertAlmostEqual(loss.item(), 0.0, places=4)
+
+        # Test null safety
+        indices_null = [(torch.empty(0, dtype=torch.long), torch.empty(0, dtype=torch.long))]
+        null_loss = native_matched_binding_loss(attention, vmask, targets, indices_null)
+        self.assertEqual(null_loss.item(), 0.0)
+
 
 if __name__ == "__main__":
     unittest.main()
