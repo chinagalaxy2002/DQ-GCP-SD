@@ -371,15 +371,19 @@ The 104 MB model checkpoints are intentionally not included in Git.
 
 ----------
 
-## Current Full + D1-Attention + Hungarian Binding run
+## Soccer-GMR Full CSC + D1-Attention Pooling + Hungarian Binding
 
-This run combines the Full semantic variant, D1 cross-attention evidence
-pooling, and the Hungarian-matched D1 Binding Loss on Soccer-GMR Standard:
+This method is **not LS-DQ-CGP**. It is implemented in
+[`sim_detr/soccer_gmr_csc`](sim_detr/soccer_gmr_csc/) and combines the Full
+Candidate-Conditioned Semantic Calibration (CSC) variant, D1 cross-attention
+evidence pooling, and the Hungarian-matched D1 Binding Loss on Soccer-GMR
+Standard. It does not use the LS-DQ-CGP semantic bases, prompts, or CGP routing
+modules.
 
 | Setting | Value |
 | --- | --- |
 | Experiment ID | `full_d1attn_bind0.2_bsz8_dec2_seed2023` |
-| Semantic variant | Full |
+| Semantic variant | Full CSC (candidate-conditioned calibration) |
 | Evidence source | D1 attention (`d1_attention`) |
 | Binding loss | Hungarian-matched D1 Binding Loss, coefficient `0.2` |
 | Decoder layers | `2` |
@@ -406,7 +410,7 @@ bash sim_detr/soccer_gmr_csc/scripts/train_variant.sh full 1 2023 \
   --dec_layers 2
 ```
 
-The currently observed tmux job was resumed from the latest checkpoint with:
+The completed tmux job was resumed from the latest checkpoint with:
 
 ```bash
 CUDA_VISIBLE_DEVICES=1 \
@@ -434,6 +438,23 @@ validation-selected checkpoint is epoch `148`.
 | Best validation checkpoint | 148 | **23.64** | **14.83** | **25.97** | **33.66** | **34.44** | **30.70** | **30.57** | **75.69** |
 | Final training epoch | 198 | 17.77 | 8.46 | 20.88 | 28.92 | 24.41 | 21.03 | 21.00 | 73.83 |
 | Test (best validation checkpoint) | 148 | 22.03 | 12.79 | 26.00 | 32.51 | 30.89 | 27.45 | 27.41 | 76.14 |
+
+### Comparison with existing seed-2023 Soccer-GMR runs
+
+| Method | Decoder layers | Best val mAP | Test mAP |
+| --- | ---: | ---: | ---: |
+| Native Sim-DETR | 4 | 22.59 | 20.73 |
+| Static semantic calibration | 4 | **24.30** | 21.09 |
+| Prior Full CSC (native-mask evidence) | 4 | 22.48 | 19.43 |
+| LS-DQ-CGP | 2 | 21.06 | 18.57 |
+| **Full CSC + D1 Attention + Binding** | 2 | 23.64 | **22.03** |
+
+The new Full CSC variant has the highest test mAP in this seed-2023 summary:
+`+2.60` over the prior Full CSC run, `+0.94` over Static, and `+1.30` over
+Native Sim-DETR. Static retains the highest validation mAP. These are
+descriptive comparisons rather than a controlled component ablation because
+the new run changes the evidence source, adds Binding supervision, and uses a
+two-layer instead of a four-layer decoder.
 
 The best checkpoint also obtains `G-mIoU@1/3/5 = 40.58 / 33.60 / 31.39`.
 The final training epoch obtains `G-mIoU@1/3/5 = 35.61 / 31.33 / 29.86`,
