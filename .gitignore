@@ -17,6 +17,7 @@ data/
 *.log
 *.log.txt
 results_dq_cgp/
+results_soccer_gmr_csc/
 layerwise_ownership_outputs/
 Layeerconsistentbinding/outputs/
 causal_occurrence_lab/outputs/
