@@ -1,0 +1,3 @@
+# Keep only the curated, lightweight records below under version control.
+hl-video_tef-*/
+*.tmux.log

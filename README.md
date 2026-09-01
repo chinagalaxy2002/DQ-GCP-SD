@@ -37,6 +37,25 @@ sha256sum checkpoints/model_best.ckpt
 # cb0df35b25397e34b8da27e0dd9a266d4fca00c0584cfbd45b5be8639ebc3e19
 ```
 
+### Candidate-Conditioned Semantic Calibration pilot
+
+We also evaluated a late semantic residual that uses each final decoder
+candidate's native temporal mask to pool video evidence before calibrating only
+its foreground logit. The decoder, localization heads, IoU scores, matcher,
+auxiliary outputs, and original losses remain unchanged.
+
+| Validation method (seed 2017) | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | MR mAP |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Sim-DETR baseline | 68.32 | 53.81 | 69.03 | **50.77** | **49.14** |
+| + Static semantic calibration | **68.52** | 53.35 | **69.25** | 50.33 | 48.95 |
+| + Candidate-conditioned calibration | 67.81 | **54.52** | 68.78 | 50.20 | **49.14** |
+
+The candidate-conditioned model matches the baseline, and rolling candidate
+contexts slightly increases MR mAP (`49.14 → 49.17`). This is a No-Go under
+the experiment's pre-registered criterion: candidate-context correspondence is
+not supported as the source of a retrieval improvement. See the
+[complete implementation, logs, counterfactual table, and reproduction guide](results_semantic_calibration/README.md).
+
 ### Completed Native Hungarian Binding control
 
 We also completed a parameter-free control that supervises only Sim-DETR's

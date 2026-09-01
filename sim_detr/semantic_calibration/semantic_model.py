@@ -1,0 +1,112 @@
+"""Native Sim-DETR wrapper for late candidate semantic calibration."""
+
+from __future__ import annotations
+
+import torch
+from torch import nn
+
+from .semantic_calibrator import (
+    CandidateSemanticCalibrator,
+    normalize_evidence_weights,
+    pool_video_evidence,
+)
+from .transformer_capture import TransformerOutputCapture
+
+
+class SimDETRWithSemanticCalibration(nn.Module):
+    """Wrap a native Sim-DETR and replace only its final ``pred_logits``."""
+
+    def __init__(
+        self,
+        base_model: nn.Module,
+        hidden_dim: int = 256,
+        dropout: float = 0.1,
+        semantic_scale_init: float = 1.0,
+        semantic_variant: str = "full",
+        detach_support: bool = True,
+        diagnostic_mode: bool = False,
+    ):
+        super().__init__()
+        if semantic_variant not in {"native", "static", "full"}:
+            raise ValueError(f"Unknown semantic_variant: {semantic_variant}")
+        self.base_model = base_model
+        self.semantic_calibrator = CandidateSemanticCalibrator(
+            hidden_dim=hidden_dim,
+            dropout=dropout,
+            semantic_scale_init=semantic_scale_init,
+        )
+        self.transformer_capture = TransformerOutputCapture(base_model.transformer)
+        self.semantic_variant = semantic_variant
+        self.detach_support = bool(detach_support)
+        self.diagnostic_mode = bool(diagnostic_mode)
+        self.semantic_context_variant = "aligned"
+        self.semantic_scale_override = None
+
+    @property
+    def semantic_scale(self):
+        return self.semantic_calibrator.semantic_scale
+
+    def set_counterfactual(self, semantic_variant=None, context_variant=None):
+        if semantic_variant is not None:
+            if semantic_variant not in {"native", "static", "full"}:
+                raise ValueError(f"Unknown semantic_variant: {semantic_variant}")
+            self.semantic_variant = semantic_variant
+        if context_variant is not None:
+            if context_variant not in {"aligned", "roll", "uniform"}:
+                raise ValueError(f"Unknown context variant: {context_variant}")
+            self.semantic_context_variant = context_variant
+
+    def forward(self, *args, **kwargs):
+        native_outputs = self.base_model(*args, **kwargs)
+        query_states, video_memory = self.transformer_capture.consume()
+        native_logits = native_outputs["pred_logits"]
+        native_outputs["pred_logits_native"] = native_logits
+
+        if self.semantic_variant == "native":
+            native_outputs["semantic_scores"] = None
+            native_outputs["semantic_scale"] = native_logits.new_zeros(())
+            return native_outputs
+
+        if query_states.ndim != 4:
+            raise RuntimeError(f"Expected decoder states [L,B,Q,D], got {query_states.shape}")
+        query_states = query_states[-1]
+        static_semantic = native_outputs["src_txt_cls_ed"]
+        weights = None
+        video_context = None
+        if self.semantic_variant == "full":
+            support = native_outputs["pred_masks"]
+            if self.detach_support:
+                support = support.detach()
+
+            video_mask = native_outputs.get("video_mask")
+            if video_mask is None:
+                raise KeyError("Native Sim-DETR output does not contain video_mask")
+            weights = normalize_evidence_weights(support, video_mask)
+            if self.semantic_context_variant == "uniform":
+                valid = video_mask.to(device=support.device, dtype=support.dtype).unsqueeze(1)
+                weights = valid / valid.sum(dim=-1, keepdim=True).clamp_min(1.0)
+                weights = weights.expand(-1, support.shape[1], -1)
+            video_context = pool_video_evidence(weights, video_memory)
+            if self.semantic_context_variant == "roll":
+                video_context = torch.roll(video_context, shifts=1, dims=1)
+
+        semantic_output = self.semantic_calibrator(
+            query_states=query_states,
+            static_semantic=static_semantic,
+            video_context=video_context,
+            native_logits=native_logits,
+            variant=self.semantic_variant,
+            semantic_scale_override=self.semantic_scale_override,
+        )
+        native_outputs["pred_logits"] = semantic_output.pred_logits
+        native_outputs["semantic_scores"] = semantic_output.semantic_scores
+        native_outputs["semantic_scale"] = self.semantic_scale
+        if self.diagnostic_mode:
+            native_outputs["conditioned_semantics"] = semantic_output.conditioned_semantics
+            native_outputs["semantic_delta"] = semantic_output.semantic_delta
+            native_outputs["evidence_weights"] = weights
+            native_outputs["video_evidence"] = video_context
+        return native_outputs
+
+    def close(self):
+        self.transformer_capture.close()
