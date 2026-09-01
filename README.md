@@ -237,9 +237,9 @@ fixed-checkpoint sensitivity diagnostic, not independent retraining.
 The QVHighlights two-layer LS-DQ-CGP run stopped after eight logged epochs; its
 intermediate best val MR-mAP is `29.45`, with no test result. At the
 2026-09-01 19:31 CST snapshot, the two-layer Soccer-GMR LS-DQ-CGP run was at
-epoch 88 (best val mAP `18.23` at epoch 57), and the two-layer Full CSC run
-using D1-attention evidence plus binding 0.2 was at epoch 39 (best val mAP
-`15.97` at epoch 37). These values are not final results.
+epoch 88 (best val mAP `18.23` at epoch 57). The two-layer Full CSC run using
+D1-attention evidence plus binding 0.2 was at epoch 39 (best val mAP `15.97` at
+epoch 37); its later status is reported in the current-run section below.
 
 by Jiajin Tang*, Zhengxuan Wei*, Yuchen Zhu, Cheng Shi, Guanbin Li, Liang Lin, Sibei Yang†
 
@@ -368,3 +368,91 @@ The complete official test metrics, raw test predictions, formal training
 history, and console logs are versioned in
 [`results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023`](results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023/).
 The 104 MB model checkpoints are intentionally not included in Git.
+
+----------
+
+## Current Full + D1-Attention + Hungarian Binding run
+
+This run combines the Full semantic variant, D1 cross-attention evidence
+pooling, and the Hungarian-matched D1 Binding Loss on Soccer-GMR Standard:
+
+| Setting | Value |
+| --- | --- |
+| Experiment ID | `full_d1attn_bind0.2_bsz8_dec2_seed2023` |
+| Semantic variant | Full |
+| Evidence source | D1 attention (`d1_attention`) |
+| Binding loss | Hungarian-matched D1 Binding Loss, coefficient `0.2` |
+| Decoder layers | `2` |
+| Seed / batch size | `2023` / `8` |
+| Learning rate | `5e-5` |
+| Soccer-GMR split | Standard (`4,138 / 465 / 1,036`) |
+| Training budget | Up to `400` epochs, validation patience `50` |
+
+### Launch commands
+
+The dedicated one-command launcher is
+[`train_full_d1attn_bind.sh`](sim_detr/soccer_gmr_csc/scripts/train_full_d1attn_bind.sh):
+
+```bash
+bash sim_detr/soccer_gmr_csc/scripts/train_full_d1attn_bind.sh 1 2023 0.2 2
+```
+
+The equivalent generic-variant invocation is:
+
+```bash
+bash sim_detr/soccer_gmr_csc/scripts/train_variant.sh full 1 2023 \
+  --semantic_evidence_source d1_attention \
+  --binding_loss_coef 0.2 \
+  --dec_layers 2
+```
+
+The currently observed tmux job was resumed from the latest checkpoint with:
+
+```bash
+CUDA_VISIBLE_DEVICES=1 \
+/home/guoxiangyu/miniconda3/envs/sim_detr/bin/python \
+  -m sim_detr.soccer_gmr_csc.train \
+  --semantic_variant full \
+  --semantic_evidence_source d1_attention \
+  --binding_loss_coef 0.2 \
+  --dec_layers 2 \
+  --exp_id full_d1attn_bind0.2_bsz8_dec2_seed2023 \
+  --seed 2023 \
+  --gpu_id 0 \
+  --resume results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/model_latest.ckpt \
+  --gmr_root /home/guoxiangyu/VLMbasedIter_momentretrival/generalized-moment-retrieval
+```
+
+### Validation status (snapshot: 2026-09-01 21:53 CST)
+
+The job had completed epoch `191` and was still running. Checkpoint selection
+uses validation `mAP`; therefore the best checkpoint and the latest checkpoint
+are reported separately:
+
+| Checkpoint | Epoch | mAP | mR@1 | mR@3 | mR@5 | mIoU@1 | mIoU@3 | mIoU@5 | AUROC |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Best validation checkpoint | 148 | **23.64** | **14.83** | **25.97** | **33.66** | **34.44** | **30.70** | **30.57** | **75.69** |
+| Latest completed epoch | 191 | 20.16 | 10.14 | 24.33 | 31.67 | 29.90 | 26.09 | 26.04 | 76.68 |
+
+The best checkpoint also obtains `G-mIoU@1/3/5 = 40.58 / 33.60 / 31.39`.
+At epoch 191, the corresponding values are `45.77 / 40.69 / 39.19`.
+The current run has no test-set result yet; test evaluation should be performed
+after training finishes and the validation-selected `model_best.ckpt` is fixed:
+
+```bash
+CUDA_VISIBLE_DEVICES=1 PYTHONPATH="${PYTHONPATH:-}:$(pwd)" \
+/home/guoxiangyu/miniconda3/envs/sim_detr/bin/python \
+  -m sim_detr.soccer_gmr_csc.inference \
+  --checkpoint results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/model_best.ckpt \
+  --split test \
+  --gpu_id 0 \
+  --semantic_variant full \
+  --context_variant aligned \
+  --output_dir results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/test_best
+```
+
+The local training history and validation metrics are stored under
+`results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/`. Large
+checkpoints and run outputs remain gitignored; the values above are the
+validation snapshot recorded in this README and are not presented as final
+test performance.
