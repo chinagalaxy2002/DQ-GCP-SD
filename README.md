@@ -342,3 +342,29 @@ If you find this repository useful, please cite our work:
 ## License
 
 The annotation files and parts of the implementation are borrowed from Moment-DETR and TR-DETR. Consequently, our code is also released under the [MIT License](https://opensource.org/licenses/MIT).
+
+----------
+
+## Latest Soccer-GMR LS-DQ-CGP supplement
+
+This section supplements the original repository description above. The
+two-layer Soccer-GMR LS-DQ-CGP implementation is isolated in
+[`sim_detr/soccer_gmr_ls_dq_cgp`](sim_detr/soccer_gmr_ls_dq_cgp/) and does not
+modify the existing Soccer-GMR CSC implementation. It fixes the Sim-DETR
+decoder to two layers and includes D1 Binding, late semantic candidate
+adaptation, native span prediction, and max-pooled Existence gating.
+
+The formal seed-2023 run used the Soccer-GMR Standard split (4,138/465/1,036),
+batch size 8, learning rate `5e-5`, 16 semantic bases, prompt length 6, and
+Binding coefficient `0.2`. It completed 198 epochs and stopped by the configured
+validation patience of 50. The validation-selected checkpoint was epoch 148.
+
+| Split | mAP | mR@1 | mR@3 | mR@5 | mIoU@1 | AUROC |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Best validation (epoch 148) | 21.06 | 12.60 | 25.44 | 30.30 | 30.69 | 77.07 |
+| Test (best validation checkpoint) | 18.57 | 11.45 | 21.40 | 26.88 | 28.40 | 74.91 |
+
+The complete official test metrics, raw test predictions, formal training
+history, and console logs are versioned in
+[`results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023`](results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023/).
+The 104 MB model checkpoints are intentionally not included in Git.
