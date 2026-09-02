@@ -234,15 +234,21 @@ MR-mAP `49.59/49.66/49.53/49.45` at beta `0/0.05/0.10/0.20`. A wider sweep
 decreases from `49.16` at beta `0.5` to `47.20` at beta `3.0`. This is a
 fixed-checkpoint sensitivity diagnostic, not independent retraining.
 
-### Incomplete experiments and historical snapshots
+### Two-layer QVHighlights LS-DQ-CGP completed run and counterfactuals
 
-The QVHighlights two-layer LS-DQ-CGP run stopped after eight logged epochs; its
-intermediate best val MR-mAP is `29.45`, with no test result. At the
-2026-09-01 19:31 CST snapshot, the two-layer Soccer-GMR LS-DQ-CGP run was at
-epoch 88 (best val mAP `18.23` at epoch 57). At that same historical snapshot,
-the two-layer Full CSC run using D1-attention evidence plus binding 0.2 was at
-epoch 39; it later finished at epoch 198, and its final result is reported in
-the completed section below.
+The two-layer Sim-DETR LS-DQ-CGP run on QVHighlights completed all 200 epochs using seed 2017, batch size 32, learning rate `1e-4`, 16 semantic bases, prompt length 6, and Binding coefficient `0.2`. The validation-selected checkpoint is epoch 106 with validation MR-full-mAP `46.04` and R1@0.5 `69.16`.
+
+| Semantic mode | Operation | Test MR-mAP | Test R1@0.5 | Test R1@0.7 | Test mAP@0.5 | Test mAP@0.75 | HL Fair mAP / Hit@1 | Delta vs active |
+| --- | :---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **Active (standard)** | $E_{\text{adapt}}^q = \text{BPS}(E_{\text{static}}, V_q)$ | **44.29** | **67.70** | **50.45** | **66.70** | **45.10** | **77.91 / 78.47** | — |
+| **Static Bypass** | $E_{\text{adapt}}^q \rightarrow E_{\text{static}}$ | 40.90 | 62.78 | 45.14 | 62.89 | 41.63 | 77.91 / 78.47 | $-3.39$ ($-7.7\%$) |
+| **Context Roll** | $V_q \rightarrow V_{q-1}$ | **36.85** | **51.17** | **37.61** | **56.16** | **37.68** | **77.91 / 78.47** | **$-7.44$ ($-16.8\%$)** |
+
+**Causal takeaways**:
+- **Semantic adaptation is active**: Disabling dynamic adaptation via Static Bypass causes test MR-mAP to drop by `3.39` and R1@0.5 by `4.92`.
+- **Candidate-context correspondence is essential**: Shuffling candidate evidence ($V_q \rightarrow V_{q-1}$) causes test MR-mAP to plummet by `7.44` ($-16.8\%$) and R1@0.5 by `16.53` ($-24.4\%$), showing that localization depends heavily on correct D1 evidence binding.
+
+The complete training logs, validation metrics, and counterfactual test predictions are versioned in [`results_ls_dq_cgp/`](results_ls_dq_cgp/) and summarized in [`results/qvhighlights_ls_dq_cgp_d2_seed2017_summary.json`](results/qvhighlights_ls_dq_cgp_d2_seed2017_summary.json).
 
 by Jiajin Tang*, Zhengxuan Wei*, Yuchen Zhu, Cheng Shi, Guanbin Li, Liang Lin, Sibei Yang†
 

@@ -212,13 +212,22 @@ For the short batch-64 Static mask-loss-6 run, the history reaches `3.43` but
 the saved `best_val_metrics.json` contains `2.68`. The history value is kept
 only as a diagnostic, and the run is excluded from formal conclusions.
 
-## Incomplete and running LS experiments
+## Completed LS-DQ-CGP experiments
 
-### QVHighlights LS-DQ-CGP
+### QVHighlights LS-DQ-CGP completed run and counterfactuals
 
-The two-layer LS-DQ-CGP run completed eight logged epochs and stopped while
-starting the ninth. Its intermediate best validation MR-mAP is `29.45` at the
-seventh evaluation. It has no test result and is not a completed comparison.
+The two-layer Sim-DETR LS-DQ-CGP run on QVHighlights completed all 200 epochs using seed 2017, batch size 32, learning rate `1e-4`, 16 semantic bases, prompt length 6, and Binding coefficient `0.2`. The validation-selected checkpoint is epoch 106 with validation MR-full-mAP `46.04` and R1@0.5 `69.16`.
+
+| Semantic mode | Test MR-mAP | Test R1@0.5 | Test R1@0.7 | Test mAP@0.5 | Test mAP@0.75 | HL Fair mAP / Hit@1 | Delta vs active |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **Active (standard)** | **44.29** | **67.70** | **50.45** | **66.70** | **45.10** | **77.91 / 78.47** | — |
+| **Static Bypass** | 40.90 | 62.78 | 45.14 | 62.89 | 41.63 | 77.91 / 78.47 | $-3.39$ ($-7.7\%$) |
+| **Context Roll** | **36.85** | **51.17** | **37.61** | **56.16** | **37.68** | **77.91 / 78.47** | **$-7.44$ ($-16.8\%$)** |
+
+Causal takeaways:
+- Disabling dynamic adaptation (Static Bypass) drops test MR-mAP by `3.39` and R1@0.5 by `4.92`.
+- Context roll causes test MR-mAP to drop by `7.44` ($-16.8\%$) and R1@0.5 by `16.53` ($-24.4\%$).
+- Artifacts and summary are saved in `results_ls_dq_cgp/runs/` and `results/qvhighlights_ls_dq_cgp_d2_seed2017_summary.json`.
 
 ### Soccer-GMR LS-DQ-CGP completed run and counterfactuals
 
