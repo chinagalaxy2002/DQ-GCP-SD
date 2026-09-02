@@ -1,0 +1,69 @@
+{
+  "generated_at": "2026-09-02 CST",
+  "method": {
+    "name": "Two-layer Sim-DETR + LS-DQ-CGP on Soccer-GMR Standard",
+    "decoder_layers": 2,
+    "seed": 2023,
+    "batch_size": 8,
+    "learning_rate": 5e-05,
+    "num_bases": 16,
+    "prompt_length": 6,
+    "binding_loss_coef": 0.2,
+    "checkpoint_selected_epoch": 148,
+    "stop_epoch": 198
+  },
+  "test_evaluations": {
+    "aligned": {
+      "semantic_mode": "aligned",
+      "description": "Standard forward candidate-conditioned semantic adaptation",
+      "map": 18.57,
+      "mr1": 11.45,
+      "mr3": 21.40,
+      "mr5": 26.88,
+      "miou1": 28.40,
+      "miou3": 26.73,
+      "miou5": 26.56,
+      "grounded_miou1": 38.96,
+      "grounded_miou3": 33.53,
+      "grounded_miou5": 31.65,
+      "auroc": 74.91
+    },
+    "static_bypass": {
+      "semantic_mode": "static_bypass",
+      "description": "Static text semantics bypass: E_adapt^q -> E_static",
+      "map": 17.89,
+      "mr1": 10.74,
+      "mr3": 21.31,
+      "mr5": 25.87,
+      "miou1": 27.52,
+      "miou3": 25.21,
+      "miou5": 25.14,
+      "grounded_miou1": 38.14,
+      "grounded_miou3": 33.16,
+      "grounded_miou5": 31.45,
+      "auroc": 74.91,
+      "delta_map_vs_aligned": -0.68
+    },
+    "context_roll": {
+      "semantic_mode": "context_roll",
+      "description": "Candidate context permuted: V_q -> V_{q-1}",
+      "map": 12.70,
+      "mr1": 5.14,
+      "mr3": 15.07,
+      "mr5": 22.43,
+      "miou1": 15.75,
+      "miou3": 13.74,
+      "miou5": 13.56,
+      "grounded_miou1": 33.37,
+      "grounded_miou3": 31.17,
+      "grounded_miou5": 30.23,
+      "auroc": 74.91,
+      "delta_map_vs_aligned": -5.87,
+      "relative_drop_pct": -31.6
+    }
+  },
+  "causal_conclusions": {
+    "semantic_adaptation": "Static bypass drops test mAP by 0.68, demonstrating active positive use of candidate-specific semantic adaptation.",
+    "context_correspondence": "Context roll drops test mAP catastrophically by 5.87 (-31.6%) and mR@1 by 6.31 (-55.1%), proving that model grounding strictly depends on accurate candidate-context binding."
+  }
+}

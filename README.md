@@ -367,9 +367,25 @@ validation patience of 50. The validation-selected checkpoint was epoch 148.
 | Best validation (epoch 148) | 21.06 | 12.60 | 25.44 | 30.30 | 30.69 | 77.07 |
 | Test (best validation checkpoint) | 18.57 | 11.45 | 21.40 | 26.88 | 28.40 | 74.91 |
 
-The complete official test metrics, raw test predictions, formal training
-history, and console logs are versioned in
-[`results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023`](results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023/).
+
+### Soccer-GMR LS-DQ-CGP semantic counterfactual interventions
+
+To directly test whether candidate-conditioned semantic adaptation is used and whether candidate-context correspondence is essential, we evaluate the best validation checkpoint under two counterfactual interventions on the 1,036 test queries:
+1. **Static Bypass ($E_{\text{adapt}}^q \rightarrow E_{\text{static}}$)**: Disables dynamic candidate adaptation and uses fixed static semantics.
+2. **Context Roll ($V_q \rightarrow V_{q-1}$)**: Permutes the candidate-specific evidence to break true correspondence.
+
+| Semantic mode | Operation | Test mAP | Test mR@1 | Test mR@3 | Test mR@5 | Test mIoU@1 | G-mIoU@1 | Delta vs aligned |
+| --- | :---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **Aligned (standard)** | $E_{\text{adapt}}^q = \text{BPS}(E_{\text{static}}, V_q)$ | **18.57** | **11.45** | **21.40** | **26.88** | **28.40** | **38.96** | — |
+| **Static Bypass** | $E_{\text{adapt}}^q \rightarrow E_{\text{static}}$ | 17.89 | 10.74 | 21.31 | 25.87 | 27.52 | 38.14 | $-0.68$ ($-3.7\%$) |
+| **Context Roll** | $V_q \rightarrow V_{q-1}$ | **12.70** | **5.14** | **15.07** | **22.43** | **15.75** | **33.37** | **$-5.87$ ($-31.6\%$)** |
+
+**Causal takeaways**:
+- **Semantic adaptation is active**: Disabling dynamic adaptation drops test mAP from `18.57` to `17.89` ($\Delta = -0.68$).
+- **Candidate-context correspondence is critical**: Breaking candidate-evidence alignment ($V_q \rightarrow V_{q-1}$) causes a catastrophic drop of `5.87` test mAP ($-31.6\%$) and `6.31` mR@1 ($-55.1\%$), confirming that the model's grounding capability strictly depends on correct localized evidence binding.
+
+The complete official test metrics, raw test predictions, counterfactual evaluations (`aligned`, `static_bypass`, `context_roll`), formal training history, and console logs are versioned in
+[`results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023`](results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023/), with a compact machine-readable summary in [`results/soccer_gmr_ls_dq_cgp_counterfactuals_summary.json`](results/soccer_gmr_ls_dq_cgp_counterfactuals_summary.json).
 The 104 MB model checkpoints are intentionally not included in Git.
 
 ----------

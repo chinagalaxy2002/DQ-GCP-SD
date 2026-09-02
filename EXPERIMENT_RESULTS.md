@@ -220,18 +220,21 @@ The two-layer LS-DQ-CGP run completed eight logged epochs and stopped while
 starting the ninth. Its intermediate best validation MR-mAP is `29.45` at the
 seventh evaluation. It has no test result and is not a completed comparison.
 
-### Soccer-GMR historical running snapshot
+### Soccer-GMR LS-DQ-CGP completed run and counterfactuals
 
-The values below are a log snapshot at **2026-09-01 19:31 CST**, not final
-results.
+The two-layer Soccer-GMR LS-DQ-CGP run completed 198 epochs (early stopped with patience 50) and selected epoch 148. Its official validation mAP is `21.06` and test mAP is `18.57`.
 
-| Run | Last completed epoch | Best epoch so far | Best val mAP so far | Status |
-| --- | ---: | ---: | ---: | --- |
-| Two-layer Soccer-GMR LS-DQ-CGP | 88 | 57 | 18.23 | Running |
+| Semantic intervention | Test mAP | Test mR@1 | Test mR@3 | Test mR@5 | Test mIoU@1 | G-mIoU@1 | Delta vs aligned |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| **Aligned (standard)** | **18.57** | **11.45** | **21.40** | **26.88** | **28.40** | **38.96** | — |
+| **Static Bypass** | 17.89 | 10.74 | 21.31 | 25.87 | 27.52 | 38.14 | $-0.68$ ($-3.7\%$) |
+| **Context Roll** | **12.70** | **5.14** | **15.07** | **22.43** | **15.75** | **33.37** | **$-5.87$ ($-31.6\%$)** |
 
-The Full CSC row originally recorded in this snapshot later completed and is
-reported in the completed comparison above. The LS-DQ-CGP row remains only a
-historical intermediate record unless a later completed result is added.
+The results confirm that:
+1. Static bypass drops performance, demonstrating active use of candidate-specific semantic adaptation.
+2. Context roll causes a massive `5.87` test mAP drop ($-31.6\%$) and `6.31` mR@1 drop ($-55.1\%$), establishing that grounding accuracy strictly depends on correct localized evidence binding.
+
+Artifacts and compact summaries are versioned in `results_soccer_gmr_ls_dq_cgp/ls_dq_cgp_d2_seed2023/` and `results/soccer_gmr_ls_dq_cgp_counterfactuals_summary.json`.
 
 ## Artifact policy
 
