@@ -1,8 +1,8 @@
 # Consolidated Experiment Record
 
 This document reconciles the versioned reports with the local training logs,
-metric JSON files, checkpoints, and interrupted runs available on
-2026-09-01. It separates completed results from diagnostics and unfinished
+metric JSON files, checkpoints, and interrupted runs available through
+2026-09-02. It separates completed results from diagnostics and unfinished
 experiments so that the latter are not cited as final numbers.
 
 The matching machine-readable snapshot is
@@ -17,8 +17,9 @@ The matching machine-readable snapshot is
 - `Incomplete` means that a run produced intermediate metrics but did not
   finish its planned budget.
 - `Running` values are timestamped snapshots and must not be reported as final.
-- Unless stated otherwise, QVHighlights uses seed 2017 and Soccer-GMR uses seed
-  2023. No multi-seed claim is made.
+- Earlier QVHighlights experiments use seed 2017. The Full CSC + D1-attention
+  + Hungarian-binding depth comparison uses seed 2023 on both datasets. No
+  multi-seed claim is made.
 
 ## Evaluation provenance
 
@@ -45,11 +46,21 @@ batch size 32, and a 200-epoch from-scratch budget unless noted otherwise.
 | LCB Full | Acquire at D1, preserve through D2-D4 | 49.19 | 47.25 | Completed mechanism control |
 | Static semantic calibration | Shared text semantics | 48.95 | not run | Completed validation study |
 | Candidate-conditioned calibration | Candidate mask-pooled semantics | 49.14 | not run | Completed validation study |
+| Full CSC + D1 attention + binding, D2 | D1 evidence; bind 0.20; seed 2023; batch 8 | 47.37 | 45.88 | Completed depth comparison |
+| Full CSC + D1 attention + binding, D4 | D1 evidence; bind 0.20; seed 2023; batch 8 | 48.47 | 46.28 | Completed depth comparison |
 
 The DQ-CGP V3 checkpoint was selected at epoch 103 within its run. It was the
 pre-designated release configuration. A later exploratory grid contained a
 configuration with a higher validation score, so V3 should not be described as
 the validation winner of that later grid.
+
+For the new Full CSC depth comparison, D2 stopped early at epoch 145 and its
+best checkpoint was selected at epoch 95. D4 stopped early at **epoch 241**
+and its best checkpoint was selected at epoch 212. D4 improves over D2 by
+`1.10` validation MR-mAP and `0.40` test MR-mAP, so D4 is the preferred depth
+for this method on QVHighlights. However, its `48.47/46.28` validation/test
+MR-mAP remains below the standard Sim-DETR baseline (`49.14/47.60`), so this
+run does not establish a QVHighlights improvement.
 
 ### DQ-CGP screening grid
 
@@ -168,6 +179,22 @@ either Static or Native. Full-checkpoint context interventions range from
 higher than aligned (`19.53` versus `19.43`). The evidence for correct
 candidate-context correspondence is therefore weak in this run.
 
+### Full CSC + D1-attention evidence + Hungarian binding
+
+This is a separate seed-2023 depth comparison and is **not LS-DQ-CGP**. Both
+runs use batch size 8 and binding coefficient 0.2.
+
+| Decoder depth | Stop epoch | Selected epoch | Val mAP | Test mAP | Test mR@1 | Test mR@3 | Test mR@5 | Test mIoU@1 |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 2 | 198 | 148 | 23.64 | **22.03** | **12.79** | **26.00** | **32.51** | **30.89** |
+| 4 | 196 | 146 | **23.72** | 20.75 | 11.85 | 23.87 | 31.20 | 29.66 |
+
+D4 is only `0.08` higher on validation mAP but `1.28` lower on test mAP, so D2
+is the preferred Soccer-GMR depth. Its `22.03` test mAP is the highest result
+in the current seed-2023 Soccer-GMR table, but the gain cannot be attributed to
+one component because evidence pooling, binding, and decoder depth were not
+varied in a controlled factorial ablation.
+
 ### Protocol-development runs
 
 These validation-only runs document how the Soccer-GMR protocol evolved. They
@@ -193,20 +220,18 @@ The two-layer LS-DQ-CGP run completed eight logged epochs and stopped while
 starting the ninth. Its intermediate best validation MR-mAP is `29.45` at the
 seventh evaluation. It has no test result and is not a completed comparison.
 
-### Soccer-GMR running snapshot
+### Soccer-GMR historical running snapshot
 
 The values below are a log snapshot at **2026-09-01 19:31 CST**, not final
 results.
 
 | Run | Last completed epoch | Best epoch so far | Best val mAP so far | Status |
 | --- | ---: | ---: | ---: | --- |
-| Two-layer Full CSC with D1-attention evidence and binding 0.2 | 39 | 37 | 15.97 | Running |
 | Two-layer Soccer-GMR LS-DQ-CGP | 88 | 57 | 18.23 | Running |
 
-The two-layer CSC run changes both the semantic evidence source and adds a D1
-binding loss, so it is not the same controlled method as the completed
-native-mask CSC comparison. Final test evaluation should wait until training
-and validation selection finish.
+The Full CSC row originally recorded in this snapshot later completed and is
+reported in the completed comparison above. The LS-DQ-CGP row remains only a
+historical intermediate record unless a later completed result is added.
 
 ## Artifact policy
 
@@ -241,8 +266,10 @@ directories while retaining the claims and their numerical provenance.
   [`results_semantic_calibration/README.md`](results_semantic_calibration/README.md).
 - Soccer-GMR semantic calibration:
   [`sim_detr/soccer_gmr_csc/README.md`](sim_detr/soccer_gmr_csc/README.md).
+- Completed Full CSC + D1-attention + Hungarian-binding depth comparison:
+  [`results/full_d1attn_binding_seed2023_summary.json`](results/full_d1attn_binding_seed2023_summary.json).
 
-The beta sweeps, early Soccer-GMR runs, interrupted LS run, and running
+The beta sweeps, early Soccer-GMR runs, interrupted LS run, and historical
 snapshots were reconstructed from ignored local output directories. Their
 compact values are versioned in the machine-readable inventory, while the raw
 logs remain local.

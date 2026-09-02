@@ -1,0 +1,54 @@
+{
+  "generated_at": "2026-09-02 CST",
+  "method": {
+    "name": "Full candidate-conditioned semantic calibration with D1-attention evidence pooling and Hungarian binding loss",
+    "semantic_variant": "full",
+    "semantic_evidence_source": "d1_attention",
+    "binding_loss_coef": 0.2,
+    "seed": 2023,
+    "batch_size": 8,
+    "learning_rate": 5e-05,
+    "is_ls_dq_cgp": false
+  },
+  "qvhighlights": [
+    {
+      "decoder_layers": 2,
+      "stop_epoch": 145,
+      "selected_epoch": 95,
+      "selected_depth": false,
+      "val": {"mr_map": 47.37, "r1_05": 67.68, "r1_07": 52.45, "map_05": 67.81, "map_075": 48.55, "hl_fair_map": 77.98, "hl_fair_hit1": 79.55},
+      "test": {"mr_map": 45.88, "r1_05": 67.51, "r1_07": 51.04, "map_05": 67.57, "map_075": 46.31, "hl_fair_map": 77.68, "hl_fair_hit1": 79.12}
+    },
+    {
+      "decoder_layers": 4,
+      "stop_epoch": 241,
+      "selected_epoch": 212,
+      "selected_depth": true,
+      "val": {"mr_map": 48.47, "r1_05": 66.58, "r1_07": 53.35, "map_05": 67.43, "map_075": 49.63, "hl_fair_map": 77.53, "hl_fair_hit1": 79.16},
+      "test": {"mr_map": 46.28, "r1_05": 67.32, "r1_07": 50.84, "map_05": 67.41, "map_075": 46.96, "hl_fair_map": 77.53, "hl_fair_hit1": 78.60}
+    }
+  ],
+  "soccer_gmr": [
+    {
+      "decoder_layers": 2,
+      "stop_epoch": 198,
+      "selected_epoch": 148,
+      "selected_depth": true,
+      "val": {"map": 23.64, "mr1": 14.83, "mr3": 25.97, "mr5": 33.66, "miou1": 34.44, "miou3": 30.70, "miou5": 30.57, "auroc": 75.69},
+      "test": {"map": 22.03, "mr1": 12.79, "mr3": 26.00, "mr5": 32.51, "miou1": 30.89, "miou3": 27.45, "miou5": 27.41, "auroc": 76.14, "grounded_miou1": 38.42, "grounded_miou3": 32.59, "grounded_miou5": 30.74}
+    },
+    {
+      "decoder_layers": 4,
+      "stop_epoch": 196,
+      "selected_epoch": 146,
+      "selected_depth": false,
+      "val": {"map": 23.72, "mr1": 13.62, "mr3": 27.01, "mr5": 35.18, "miou1": 33.36, "miou3": 29.51, "miou5": 29.38, "auroc": 74.24},
+      "test": {"map": 20.75, "mr1": 11.85, "mr3": 23.87, "mr5": 31.20, "miou1": 29.66, "miou3": 26.84, "miou5": 26.75, "auroc": 74.58}
+    }
+  ],
+  "interpretation": {
+    "qvhighlights": "D4 is better than D2 within this method, but remains below the standard Sim-DETR baseline on validation and test MR-mAP.",
+    "soccer_gmr": "D2 is preferred and has the highest test mAP in the current seed-2023 comparison table.",
+    "causal_scope": "Controlled component ablations and multiple seeds are required before attributing gains to D1-attention pooling or Hungarian binding."
+  }
+}

@@ -139,15 +139,39 @@ The implementation is isolated to this directory plus the generic
 `sim_detr/semantic_calibration/` wrapper. The native `sim_detr/model.py`,
 `transformer.py`, and `matcher.py` are not modified.
 
-## Additional local runs
+## Additional two-layer native-mask runs
 
 A validation-only two-layer comparison with the same batch-8, null-aware,
 mask-loss-6 protocol obtained `22.41` mAP for Static and `20.88` for Full. No
 matched two-layer Native run or test evaluation exists, so these values do not
 support a two-layer effectiveness claim.
 
-At the 2026-09-01 19:31 CST snapshot, a separate two-layer Full run using D1
-cross-attention as semantic evidence and adding binding weight 0.2 had completed
-epoch 39. Its best validation mAP so far was `15.97` at epoch 37. That run was
-still training and differs in more than one method variable from the completed
-native-mask comparison; it is not a final result.
+## Full CSC + D1 Attention + Hungarian Binding
+
+This method uses Full CSC with D1 cross-attention evidence pooling and
+Hungarian-matched D1 Binding weight `0.2`. It is not LS-DQ-CGP and does not use
+semantic bases, prompts, or CGP routing. Both runs use seed 2023, batch size 8,
+and learning rate `5e-5`.
+
+| Split / decoder layers | Selected epoch | mAP | mR@1 | mR@3 | mR@5 | mIoU@1 | AUROC |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Validation / 2 | 148 | 23.64 | **14.83** | 25.97 | 33.66 | **34.44** | **75.69** |
+| Test / 2 | 148 | **22.03** | **12.79** | **26.00** | **32.51** | **30.89** | **76.14** |
+| Validation / 4 | 146 | **23.72** | 13.62 | **27.01** | **35.18** | 33.36 | 74.24 |
+| Test / 4 | 146 | 20.75 | 11.85 | 23.87 | 31.20 | 29.66 | 74.58 |
+
+The two-layer run stopped at epoch 198; the four-layer run stopped at epoch
+196. The two-layer checkpoint is preferred because its test mAP is `1.28`
+higher, despite the four-layer run being `0.08` higher on validation mAP.
+
+| Artifact | Two-layer run | Four-layer run |
+| --- | --- | --- |
+| Run directory | `results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/` | `results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec4_seed2023/` |
+| Best validation metrics | `best_val_metrics.json` | `best_val_metrics.json` |
+| Test metrics | `test_best/test_full_aligned_metrics.json` | `test_best/test_full_aligned_metrics.json` |
+| Test predictions | `test_best/test_full_aligned_predictions.jsonl` | `test_best/test_full_aligned_predictions.jsonl` |
+| Best checkpoint | `model_best.ckpt` | `model_best.ckpt` |
+| Console log | `results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023.log` | `results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec4_seed2023.log` |
+
+Selected metric JSON files are versioned. Checkpoints, predictions, histories,
+and console logs remain local because of their size.

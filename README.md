@@ -6,6 +6,8 @@
 > [machine-readable snapshot](results/experiment_inventory_2026_09_01.json).
 > It also documents metric provenance and prevents intermediate runs from being
 > cited as final results.
+> The completed seed-2023 Full CSC + D1-attention + Hungarian-binding runs are
+> also collected in a [cross-dataset machine-readable summary](results/full_d1attn_binding_seed2023_summary.json).
 
 ## DQ-CGP V3 (D1) extension
 
@@ -232,14 +234,15 @@ MR-mAP `49.59/49.66/49.53/49.45` at beta `0/0.05/0.10/0.20`. A wider sweep
 decreases from `49.16` at beta `0.5` to `47.20` at beta `3.0`. This is a
 fixed-checkpoint sensitivity diagnostic, not independent retraining.
 
-### Incomplete and running experiments
+### Incomplete experiments and historical snapshots
 
 The QVHighlights two-layer LS-DQ-CGP run stopped after eight logged epochs; its
 intermediate best val MR-mAP is `29.45`, with no test result. At the
 2026-09-01 19:31 CST snapshot, the two-layer Soccer-GMR LS-DQ-CGP run was at
-epoch 88 (best val mAP `18.23` at epoch 57). The two-layer Full CSC run using
-D1-attention evidence plus binding 0.2 was at epoch 39 (best val mAP `15.97` at
-epoch 37); its completed result is reported in the current-run section below.
+epoch 88 (best val mAP `18.23` at epoch 57). At that same historical snapshot,
+the two-layer Full CSC run using D1-attention evidence plus binding 0.2 was at
+epoch 39; it later finished at epoch 198, and its final result is reported in
+the completed section below.
 
 by Jiajin Tang*, Zhengxuan Wei*, Yuchen Zhu, Cheng Shi, Guanbin Li, Liang Lin, Sibei Yang†
 
@@ -371,6 +374,36 @@ The 104 MB model checkpoints are intentionally not included in Git.
 
 ----------
 
+## QVHighlights Full CSC + D1-Attention Pooling + Hungarian Binding
+
+This is the QVHighlights implementation of Full Candidate-Conditioned
+Semantic Calibration with D1 cross-attention evidence pooling and a
+Hungarian-matched D1 Binding Loss (`lambda=0.2`). It is isolated in
+[`sim_detr/qvhighlights_full_d1attn_bind`](sim_detr/qvhighlights_full_d1attn_bind/)
+and is not LS-DQ-CGP; it does not use semantic bases, prompts, or CGP routing.
+Both runs use seed 2023, batch size 8, and learning rate `5e-5`.
+
+The two-layer run stopped at epoch 145 and selected epoch 95. The four-layer
+run stopped at epoch 241 and selected epoch 212. The four-layer checkpoint is
+the preferred QVHighlights version by validation and test MR mAP.
+
+| Split / decoder layers | R1@0.5 | R1@0.7 | mAP@0.5 | mAP@0.75 | MR mAP | HL Fair mAP / Hit@1 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Validation / 2 | **67.68** | 52.45 | **67.81** | 48.55 | 47.37 | **77.98 / 79.55** |
+| Test-with-GT / 2 | **67.51** | **51.04** | **67.57** | 46.31 | 45.88 | **77.68 / 79.12** |
+| Validation / 4 | 66.58 | **53.35** | 67.43 | **49.63** | **48.47** | 77.53 / 79.16 |
+| Test-with-GT / 4 | 67.32 | 50.84 | 67.41 | **46.96** | **46.28** | 77.53 / 78.60 |
+
+Moving from two to four decoder layers changes validation/test MR mAP by
+`+1.10/+0.40`. The complete commands, artifact locations, and metric
+provenance are documented in the
+[QVHighlights module README](sim_detr/qvhighlights_full_d1attn_bind/README.md).
+The four-layer result is nevertheless below the standard Sim-DETR baseline
+(`49.14/47.60` validation/test MR mAP) by `0.67/1.32`, so this experiment does
+not establish a QVHighlights retrieval improvement.
+
+----------
+
 ## Soccer-GMR Full CSC + D1-Attention Pooling + Hungarian Binding
 
 This method is **not LS-DQ-CGP**. It is implemented in
@@ -382,11 +415,11 @@ modules.
 
 | Setting | Value |
 | --- | --- |
-| Experiment ID | `full_d1attn_bind0.2_bsz8_dec2_seed2023` |
+| Experiment IDs | `full_d1attn_bind0.2_bsz8_dec{2,4}_seed2023` |
 | Semantic variant | Full CSC (candidate-conditioned calibration) |
 | Evidence source | D1 attention (`d1_attention`) |
 | Binding loss | Hungarian-matched D1 Binding Loss, coefficient `0.2` |
-| Decoder layers | `2` |
+| Decoder layers | `2` and `4` |
 | Seed / batch size | `2023` / `8` |
 | Learning rate | `5e-5` |
 | Soccer-GMR split | Standard (`4,138 / 465 / 1,036`) |
@@ -410,7 +443,7 @@ bash sim_detr/soccer_gmr_csc/scripts/train_variant.sh full 1 2023 \
   --dec_layers 2
 ```
 
-The completed tmux job was resumed from the latest checkpoint with:
+The completed two-layer tmux job was resumed from the latest checkpoint with:
 
 ```bash
 CUDA_VISIBLE_DEVICES=1 \
@@ -427,17 +460,23 @@ CUDA_VISIBLE_DEVICES=1 \
   --gmr_root /home/guoxiangyu/VLMbasedIter_momentretrival/generalized-moment-retrieval
 ```
 
-### Final training and evaluation status (completed 2026-09-01 22:00 CST)
+### Final training and evaluation status
 
-The job completed `198` epochs and stopped by the configured validation
-patience of `50`. Checkpoint selection uses validation `mAP`; the
-validation-selected checkpoint is epoch `148`.
+The two-layer job completed `198` epochs and stopped by the configured
+validation patience of `50`; its validation-selected checkpoint is epoch
+`148`. The four-layer job completed `196` epochs and selected epoch `146`.
+Checkpoint selection uses validation `mAP`.
 
-| Checkpoint | Epoch | mAP | mR@1 | mR@3 | mR@5 | mIoU@1 | mIoU@3 | mIoU@5 | AUROC |
+| Split / decoder layers | Selected epoch | mAP | mR@1 | mR@3 | mR@5 | mIoU@1 | mIoU@3 | mIoU@5 | AUROC |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
-| Best validation checkpoint | 148 | **23.64** | **14.83** | **25.97** | **33.66** | **34.44** | **30.70** | **30.57** | **75.69** |
-| Final training epoch | 198 | 17.77 | 8.46 | 20.88 | 28.92 | 24.41 | 21.03 | 21.00 | 73.83 |
-| Test (best validation checkpoint) | 148 | 22.03 | 12.79 | 26.00 | 32.51 | 30.89 | 27.45 | 27.41 | 76.14 |
+| Validation / 2 | 148 | 23.64 | **14.83** | 25.97 | 33.66 | **34.44** | **30.70** | **30.57** | **75.69** |
+| Test / 2 | 148 | **22.03** | **12.79** | **26.00** | **32.51** | **30.89** | **27.45** | **27.41** | **76.14** |
+| Validation / 4 | 146 | **23.72** | 13.62 | **27.01** | **35.18** | 33.36 | 29.51 | 29.38 | 74.24 |
+| Test / 4 | 146 | 20.75 | 11.85 | 23.87 | 31.20 | 29.66 | 26.84 | 26.75 | 74.58 |
+
+The two-layer model is the preferred Soccer-GMR version: although the
+four-layer model is `+0.08` higher on validation mAP, it is `1.28` lower on
+test mAP. This decoder-depth comparison is descriptive and based on one seed.
 
 ### Comparison with existing seed-2023 Soccer-GMR runs
 
@@ -448,22 +487,26 @@ validation-selected checkpoint is epoch `148`.
 | Prior Full CSC (native-mask evidence) | 4 | 22.48 | 19.43 |
 | LS-DQ-CGP | 2 | 21.06 | 18.57 |
 | **Full CSC + D1 Attention + Binding** | 2 | 23.64 | **22.03** |
+| Full CSC + D1 Attention + Binding | 4 | 23.72 | 20.75 |
 
 The new Full CSC variant has the highest test mAP in this seed-2023 summary:
 `+2.60` over the prior Full CSC run, `+0.94` over Static, and `+1.30` over
 Native Sim-DETR. Static retains the highest validation mAP. These are
-descriptive comparisons rather than a controlled component ablation because
-the new run changes the evidence source, adds Binding supervision, and uses a
-two-layer instead of a four-layer decoder.
+descriptive comparisons rather than a controlled component ablation. The
+headline two-layer result changes the evidence source, adds Binding
+supervision, and changes decoder depth. The four-layer comparison controls
+decoder depth but still combines D1 evidence pooling and Binding, so it does
+not isolate either component's contribution.
 
-The best checkpoint also obtains `G-mIoU@1/3/5 = 40.58 / 33.60 / 31.39`.
-The final training epoch obtains `G-mIoU@1/3/5 = 35.61 / 31.33 / 29.86`,
-and the test checkpoint obtains `38.42 / 32.59 / 30.74`. On the multi-moment
-test queries, `mR+@1/3/5 = 0.00 / 6.98 / 12.49` and
+The two-layer best validation checkpoint obtains
+`G-mIoU@1/3/5 = 40.58 / 33.60 / 31.39`, and its test checkpoint obtains
+`38.42 / 32.59 / 30.74`. On the multi-moment test queries,
+`mR+@1/3/5 = 0.00 / 6.98 / 12.49` and
 `mIoU+@1/3/5 = 0.00 / 8.75 / 8.86`.
 
-The test metrics and predictions are available at
-`results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/test_best/`.
+The test metrics and predictions are available under the corresponding
+`results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec{2,4}_seed2023/test_best/`
+directories.
 The command used to reproduce the test evaluation is:
 
 ```bash
@@ -478,7 +521,16 @@ CUDA_VISIBLE_DEVICES=1 PYTHONPATH="${PYTHONPATH:-}:$(pwd)" \
   --output_dir results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/test_best
 ```
 
-The local training history and validation metrics are stored under
-`results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec2_seed2023/`. Large
-checkpoints and run outputs remain gitignored; the values above are the final
+The local training histories and validation metrics are stored under
+`results_soccer_gmr_csc/full_d1attn_bind0.2_bsz8_dec{2,4}_seed2023/`. Selected
+metric JSON files are versioned in Git. Large checkpoints, raw predictions,
+and console logs remain local; the values above are the final
 validation-selected and local test-with-GT results for this seed.
+
+### Implementation map
+
+| Component | Repository path |
+| --- | --- |
+| QVHighlights experiment wrapper | [`sim_detr/qvhighlights_full_d1attn_bind`](sim_detr/qvhighlights_full_d1attn_bind/) |
+| Soccer-GMR experiment wrapper | [`sim_detr/soccer_gmr_csc`](sim_detr/soccer_gmr_csc/) |
+| Shared semantic calibrator | [`sim_detr/semantic_calibration`](sim_detr/semantic_calibration/) |
